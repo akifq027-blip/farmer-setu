@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Officer Control Panel - KisanSetu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body style="background: #f1f5f9;">
+
+  <!-- Admin Top Bar -->
+  <div style="background: #0f172a; color: #f8fafc; padding: 12px 0; border-bottom: 2px solid #166534;">
+    <div class="container" style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:22px;">🌾</span>
+        <div>
+          <strong style="font-size:16px;">KisanSetu • Procurement Officer Command Center</strong>
+          <div style="font-size:12px; color:#94a3b8;">Department of Agriculture & Food Civil Supplies</div>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div style="text-align:right; font-size:13px;">
+          <div id="admin-officer-name" style="font-weight:700; color:#4ade80;">Officer</div>
+          <div id="admin-officer-role" style="font-size:11px; color:#94a3b8;">Procurement Officer</div>
+        </div>
+        <button onclick="Auth.logoutAdmin()" class="btn btn-outline btn-sm" style="color:#fff; border-color:#475569; font-size:12px;">
+          Logout
+        </button>
+        <a href="/" class="btn btn-outline btn-sm" style="color:#4ade80; border-color:#166534; font-size:12px;" target="_blank">
+          Farmer View ↗
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Navigation Tabs -->
+  <div class="admin-tab-nav">
+    <div class="container" style="display:flex; gap:8px; overflow-x:auto;">
+      <button class="admin-tab-btn active" data-tab="requests">
+        📋 Live Queue & Requests (<span id="tab-req-count">All</span>)
+      </button>
+      <button class="admin-tab-btn" data-tab="schedules">
+        📅 Manage Timetables & Quotas
+      </button>
+      <button class="admin-tab-btn" data-tab="centers">
+        🏢 Procurement Centers
+      </button>
+      <button class="admin-tab-btn" data-tab="announcements">
+        📢 Broadcast Announcements
+      </button>
+      <button onclick="triggerDemoReset()" class="btn btn-outline btn-sm" style="margin-left:auto; font-size:12px;">
+        🔄 Reset Prototype Data
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content" style="padding: 24px 0 48px;">
+    <div class="container">
+
+      <!-- KPI Metrics Row -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Registered Farmers</div>
+          <div class="kpi-value" id="kpi-total-farmers">0</div>
+          <div class="kpi-sub">In state database</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">Today's Token Slots</div>
+          <div class="kpi-value" id="kpi-today-requests">0</div>
+          <div class="kpi-sub">Booked arrivals</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">Currently In Queue</div>
+          <div class="kpi-value" id="kpi-in-queue" style="color:#d97706;">0</div>
+          <div class="kpi-sub">Vehicles waiting at gate</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">On Weighbridge</div>
+          <div class="kpi-value" id="kpi-processing" style="color:#2563eb;">0</div>
+          <div class="kpi-sub">Active weighment</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-title">Procured Completed</div>
+          <div class="kpi-value" id="kpi-completed" style="color:#15803d;">0</div>
+          <div class="kpi-sub" id="kpi-total-quintals">0 Qtl grain</div>
+        </div>
+      </div>
+
+      <!-- Live Center Calling Controller Bar -->
+      <div class="live-queue-controller">
+        <div class="calling-box">
+          <div class="calling-label">WEIGHBRIDGE COUNTER (PROCESSING)</div>
+          <div class="calling-token" id="admin-calling-token-no">None</div>
+          <div class="calling-farmer" id="admin-calling-farmer-name">No vehicle currently on weighbridge</div>
+        </div>
+
+        <div style="flex:1;">
+          <div style="font-weight:700; color:#0f172a; margin-bottom:4px;" id="admin-next-in-line">
+            Queue is currently clear
+          </div>
+          <div style="font-size:13px; color:var(--text-muted);">
+            Click "Call Next Token" to advance the waiting queue and notify the next farmer in line with an audio cue.
+          </div>
+        </div>
+
+        <button onclick="callNextTokenInQueue()" class="btn btn-accent btn-lg" style="font-weight:800; white-space:nowrap;">
+          🔔 Call Next Token In Line
+        </button>
+      </div>
+
+      <!-- ================= TAB 1: REQUESTS & QUEUE ================= -->
+      <div id="tab-requests" class="admin-tab-pane" style="display:block;">
+        <div class="card">
+          <div class="card-header" style="background:#f8fafc; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h3 class="card-title">
+                <span>📋</span>
+                <span>Farmer Procurement Requests & Queue Stream</span>
+              </h3>
+              <span style="font-size:12px; color:var(--text-muted);">Real-time status controls</span>
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <select id="admin-req-status-filter" class="form-select" style="width:auto; padding:6px 12px; font-size:13px;">
+                <option value="All">All Statuses</option>
+                <option value="In Queue">In Queue (Waiting)</option>
+                <option value="Processing">Processing (Weighbridge)</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Token Assigned">Token Assigned</option>
+                <option value="Completed">Completed (DBT Sent)</option>
+              </select>
+
+              <input
+                type="text"
+                id="admin-req-search"
+                class="form-control"
+                placeholder="Search token, farmer, crop..."
+                style="width:240px; padding:6px 12px; font-size:13px;"
+              >
+            </div>
+          </div>
+
+          <div class="card-body" style="padding:0;">
+            <div class="table-responsive">
+              <table class="data-table mobile-card-table">
+                <thead>
+                  <tr>
+                    <th>Token #</th>
+                    <th>Farmer Info</th>
+                    <th>Crop & Qty</th>
+                    <th>Center & Date</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Officer Action</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-requests-tbody">
+                  <!-- Populated by admin.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB 2: SCHEDULES ================= -->
+      <div id="tab-schedules" class="admin-tab-pane" style="display:none;">
+        <div style="display:grid; grid-template-columns:1fr 2fr; gap:24px;">
+          
+          <!-- Add Schedule Form -->
+          <div class="card">
+            <div class="card-header" style="background:#f0fdf4;">
+              <h3 class="card-title">➕ Add New Schedule Slot</h3>
+            </div>
+            <div class="card-body">
+              <form id="add-schedule-form">
+                <div class="form-group">
+                  <label class="form-label">Center</label>
+                  <select id="new-sched-center" class="form-select" required></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Crop Name</label>
+                  <input type="text" id="new-sched-crop" class="form-control" placeholder="e.g. Paddy (Grade A)" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Procurement Date</label>
+                  <input type="date" id="new-sched-date" class="form-control" required>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Start Time</label>
+                    <input type="text" id="new-sched-start" class="form-control" value="08:30 AM" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">End Time</label>
+                    <input type="text" id="new-sched-end" class="form-control" value="05:30 PM" required>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Daily Available Token Slots</label>
+                  <input type="number" id="new-sched-slots" class="form-control" value="50" min="1" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                  Save Schedule Slot
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Existing Schedules Table -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Active Timetables</h3>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Crop</th>
+                      <th>Center</th>
+                      <th>Timing</th>
+                      <th>Slots</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-schedules-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= TAB 3: CENTERS ================= -->
+      <div id="tab-centers" class="admin-tab-pane" style="display:none;">
+        <div style="display:grid; grid-template-columns:1fr 2fr; gap:24px;">
+          
+          <!-- Add Center Form -->
+          <div class="card">
+            <div class="card-header" style="background:#f0fdf4;">
+              <h3 class="card-title">➕ Register Mandi Center</h3>
+            </div>
+            <div class="card-body">
+              <form id="add-center-form">
+                <div class="form-group">
+                  <label class="form-label">Center Name</label>
+                  <input type="text" id="new-center-name" class="form-control" placeholder="e.g. APMC Market Yard" required>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input type="text" id="new-center-location" class="form-control" placeholder="Mandi Road" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">District</label>
+                    <input type="text" id="new-center-district" class="form-control" placeholder="District" required>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">In-Charge Name</label>
+                    <input type="text" id="new-center-incharge" class="form-control" placeholder="Officer Name" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Contact Number</label>
+                    <input type="text" id="new-center-contact" class="form-control" placeholder="Phone" required>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Accepted Crops (Comma-separated)</label>
+                  <input type="text" id="new-center-crops" class="form-control" value="Paddy, Cotton, Maize, Wheat" required>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Opening</label>
+                    <input type="text" id="new-center-opening" class="form-control" value="08:30 AM">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Closing</label>
+                    <input type="text" id="new-center-closing" class="form-control" value="05:30 PM">
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                  Register Center
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Existing Centers Table -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Procurement Centers Directory</h3>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Center</th>
+                      <th>Location</th>
+                      <th>In-Charge</th>
+                      <th>Accepted Crops</th>
+                      <th>Hours</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-centers-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= TAB 4: ANNOUNCEMENTS ================= -->
+      <div id="tab-announcements" class="admin-tab-pane" style="display:none;">
+        <div style="display:grid; grid-template-columns:1fr 2fr; gap:24px;">
+          
+          <div class="card">
+            <div class="card-header" style="background:#fef3c7;">
+              <h3 class="card-title" style="color:#92400e;">📢 Broadcast Announcement</h3>
+            </div>
+            <div class="card-body">
+              <form id="add-announcement-form">
+                <div class="form-group">
+                  <label class="form-label">Title</label>
+                  <input type="text" id="new-ann-title" class="form-control" placeholder="Notice Title" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Notice Message</label>
+                  <textarea id="new-ann-message" class="form-control" rows="3" placeholder="Enter instructions for farmers..." required></textarea>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <select id="new-ann-priority" class="form-select">
+                      <option value="Normal">Normal</option>
+                      <option value="Urgent">Urgent</option>
+                      <option value="Info">Info</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Target Center</label>
+                    <select id="new-ann-center" class="form-select"></select>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                  Broadcast to Farmers
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Live Announcements Stream</h3>
+            </div>
+            <div class="card-body" id="admin-announcements-list">
+              <!-- Populated by admin.js -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Officer Notes Modal -->
+  <div id="notes-modal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="font-size:18px; font-weight:800; color:#14532d;">Update Officer Remarks</h3>
+        <button class="modal-close" onclick="closeNotesModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:20px;">
+        <div class="form-group">
+          <label class="form-label">Internal & Farmer Inspection Notes</label>
+          <textarea id="edit-notes-input" class="form-control" rows="4" placeholder="e.g. Moisture verified at 15.2%. Passed gate verification."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button onclick="closeNotesModal()" class="btn btn-outline">Cancel</button>
+          <button onclick="saveAdminNotes()" class="btn btn-primary">Save Notes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

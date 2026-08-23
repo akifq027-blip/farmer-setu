@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Procurement Status & Live Queue - KisanSetu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Government & Language Bar -->
+  <div class="gov-topbar">
+    <div class="container gov-topbar-inner">
+      <div class="gov-tag">
+        <span>🌾</span>
+        <span>KisanSetu • Live Queue & Status Tracker</span>
+      </div>
+      <div class="lang-selector-group">
+        <span style="font-size:12px; opacity:0.8;">Language:</span>
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="te">తెలుగు</button>
+        <button class="lang-btn" data-lang="hi">हिन्दी</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">🌾</div>
+        <div class="brand-text">
+          <h1>KisanSetu</h1>
+          <p>Status Tracker</p>
+        </div>
+      </a>
+
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation">☰</button>
+
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link" data-i18n="nav_home">Home</a></li>
+        <li><a href="/schedule.html" class="nav-link" data-i18n="nav_schedule">Schedule</a></li>
+        <li><a href="/status.html" class="nav-link active" data-i18n="nav_status">Track Status</a></li>
+        <li><a href="/centers.html" class="nav-link" data-i18n="nav_centers">Centers</a></li>
+        <li><a href="/request.html" class="nav-link" data-i18n="nav_request">Book Slot</a></li>
+        <li><a href="/help.html" class="nav-link" data-i18n="nav_help">Help</a></li>
+        <li class="nav-auth-btns" id="nav-auth-container">
+          <!-- Populated by auth.js -->
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Main Tracking Container -->
+  <main class="main-content">
+    <div class="container" style="max-width: 860px;">
+
+      <!-- Search Header -->
+      <div class="card" style="margin-bottom:28px; background:var(--primary); color:#fff; border:2px solid var(--border);">
+        <div class="card-body" style="padding:32px;">
+          <h2 style="font-size:26px; font-weight:900; color:#fff; margin-bottom:8px;" data-i18n="feat_status_title">
+            Track Your Procurement Status
+          </h2>
+          <p style="color:var(--primary-border); font-size:15px; margin-bottom:20px;">
+            Enter your Digital Token Number (e.g., A-104) or Request ID to check your live queue position and payment state.
+          </p>
+
+          <form id="track-status-form" style="display:flex; gap:12px; flex-wrap:wrap;">
+            <input
+              type="text"
+              id="search-token-input"
+              class="form-control"
+              placeholder="e.g. A-104 or req-1001"
+              required
+              style="flex:1; min-width:260px; font-size:16px; font-weight:700; text-transform:uppercase; background:#fff; color:#0f172a;"
+            >
+            <button type="submit" class="btn btn-accent btn-lg" style="font-weight:700;">
+              🔍 Track Now
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Result Card (Populated by status.js) -->
+      <div id="status-result-card" style="display:none;">
+        
+        <div class="card" style="box-shadow:var(--shadow-lg); border-radius:var(--radius-xl); overflow:hidden;">
+          
+          <!-- Card Header with Big Token & Status -->
+          <div class="card-header" style="background:#f8fafc; padding:24px 28px; align-items:center;">
+            <div>
+              <div style="font-size:12px; font-weight:800; color:var(--text-muted); text-transform:uppercase;">
+                Digital Token Identifier
+              </div>
+              <div id="display-token-number" style="font-size:36px; font-weight:900; color:#14532d; letter-spacing:1px; line-height:1.2;">
+                TOKEN-000
+              </div>
+            </div>
+            <div>
+              <span id="display-status-pill" class="status-badge in-queue" style="font-size:15px; padding:6px 16px;">
+                ● Loading...
+              </span>
+            </div>
+          </div>
+
+          <div class="card-body" style="padding:28px;">
+            
+            <!-- Live Progress Timeline Tracker -->
+            <div style="margin-bottom:32px;">
+              <div style="font-size:13px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:16px; text-align:center;">
+                Procurement Lifecycle Stages
+              </div>
+              
+              <div class="timeline-tracker">
+                <div class="timeline-line">
+                  <div class="timeline-line-progress" id="timeline-progress-bar" style="width:0%;"></div>
+                </div>
+                <div id="timeline-steps-container" style="display:contents;">
+                  <!-- Injected by status.js -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Queue Ahead Alert Box -->
+            <div id="queue-ahead-block" style="background:#ecfdf5; border:2px solid #86efac; border-radius:12px; padding:20px; text-align:center; margin-bottom:28px;">
+              <div style="font-size:13px; font-weight:800; color:#166534; text-transform:uppercase; letter-spacing:1px;">
+                Live Center Waiting Queue
+              </div>
+              <div id="display-ahead-count" style="font-size:32px; font-weight:900; color:#14532d; margin:6px 0;">
+                0 Farmers Ahead
+              </div>
+              <div id="display-est-wait" style="font-size:14px; color:#15803d; font-weight:600;">
+                Estimated waiting time: ~15 minutes
+              </div>
+            </div>
+
+            <!-- Procurement Detail Rows Grid -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:14px; margin-bottom:24px;">
+              <div class="detail-row" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin:0;">
+                <span class="detail-label">🌾 Crop Name:</span>
+                <strong id="display-crop-name" class="detail-value">-</strong>
+              </div>
+              <div class="detail-row" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin:0;">
+                <span class="detail-label">⚖️ Quantity:</span>
+                <strong id="display-quantity" class="detail-value">-</strong>
+              </div>
+              <div class="detail-row" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin:0;">
+                <span class="detail-label">🏢 Center:</span>
+                <strong id="display-center-name" class="detail-value">-</strong>
+              </div>
+              <div class="detail-row" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin:0;">
+                <span class="detail-label">📅 Scheduled Date:</span>
+                <strong id="display-procurement-date" class="detail-value">-</strong>
+              </div>
+              <div class="detail-row" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin:0;">
+                <span class="detail-label">🚜 Transport:</span>
+                <span id="display-transport" class="detail-value">-</span>
+              </div>
+              <div class="detail-row" style="background:#f8fafc; padding:10px 14px; border-radius:6px; margin:0;">
+                <span class="detail-label">👨‍🌾 Farmer:</span>
+                <span id="display-farmer-name" class="detail-value">-</span>
+              </div>
+            </div>
+
+            <!-- Additional Meta & Officer Notes -->
+            <div style="background:#f8fafc; padding:14px; border-radius:8px; font-size:13px; color:var(--text-muted); margin-bottom:20px;">
+              <div style="margin-bottom:6px;">
+                📝 <strong>Officer / Gate Notes:</strong> <span id="display-admin-notes" style="color:var(--text-main); font-weight:600;">-</span>
+              </div>
+              <div>
+                🕒 <strong>Submission Timestamp:</strong> <span id="display-submitted-at">-</span> | Request Ref: <span id="display-request-id" style="font-family:monospace;">-</span>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:center; gap:12px;">
+              <button onclick="window.print()" class="btn btn-outline">
+                🖨️ Print Token Pass
+              </button>
+              <a href="/request.html" class="btn btn-primary">
+                ➕ Book Another Crop Slot
+              </a>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Empty State -->
+      <div id="status-empty-state" class="card" style="text-align:center; padding:48px; background:#ffffff;">
+        <div style="font-size:48px; margin-bottom:12px;">🔍</div>
+        <h3 style="font-size:20px; font-weight:800; color:#14532d;">
+          Enter a Token Number Above
+        </h3>
+        <p style="color:var(--text-muted); max-width:480px; margin:8px auto 0;">
+          Try searching demo tokens: <a href="?token=A-104" style="font-weight:700; color:#15803d;">A-104</a> (Warangal In-Queue), <a href="?token=K-201" style="font-weight:700; color:#15803d;">K-201</a> (Kurnool Processing), or <a href="?token=S-312" style="font-weight:700; color:#15803d;">S-312</a> (Indore Scheduled).
+        </p>
+      </div>
+
+      <!-- Error State -->
+      <div id="status-error-state" class="card" style="display:none; text-align:center; padding:48px; background:#fff1f2; border-color:#fecdd3;">
+        <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
+        <h3 style="font-size:20px; font-weight:800; color:#9f1239;">
+          Token Not Found
+        </h3>
+        <p id="error-message-text" style="color:#be123c; margin-top:8px;">
+          The requested token number does not exist.
+        </p>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-bottom">
+      <div>© 2026 KisanSetu. Ministry of Agriculture & Farmer Welfare.</div>
+      <div>
+        <a href="/help.html">Helpdesk</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/status.js"></script>
+</body>
+</html>

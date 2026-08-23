@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procurement Schedule & Timetable - KisanSetu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Government & Language Bar -->
+  <div class="gov-topbar">
+    <div class="container gov-topbar-inner">
+      <div class="gov-tag">
+        <span>🌾</span>
+        <span>KisanSetu • Procurement Timetable</span>
+      </div>
+      <div class="lang-selector-group">
+        <span style="font-size:12px; opacity:0.8;">Language:</span>
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="te">తెలుగు</button>
+        <button class="lang-btn" data-lang="hi">हिन्दी</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">🌾</div>
+        <div class="brand-text">
+          <h1>KisanSetu</h1>
+          <p>Procurement Schedule</p>
+        </div>
+      </a>
+
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation">☰</button>
+
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link" data-i18n="nav_home">Home</a></li>
+        <li><a href="/schedule.html" class="nav-link active" data-i18n="nav_schedule">Schedule</a></li>
+        <li><a href="/status.html" class="nav-link" data-i18n="nav_status">Track Status</a></li>
+        <li><a href="/centers.html" class="nav-link" data-i18n="nav_centers">Centers</a></li>
+        <li><a href="/request.html" class="nav-link" data-i18n="nav_request">Book Slot</a></li>
+        <li><a href="/help.html" class="nav-link" data-i18n="nav_help">Help</a></li>
+        <li class="nav-auth-btns" id="nav-auth-container">
+          <!-- Populated by auth.js -->
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Page Header -->
+      <div class="section-header" style="text-align:left; margin-bottom:24px;">
+        <div class="section-subtitle">Mandi Timetable</div>
+        <h2 class="section-title" data-i18n="feat_schedule_title">Procurement Schedule & Available Slots</h2>
+        <p class="section-desc">View district and center-wise crop purchasing dates and open token quotas before departing from your village.</p>
+      </div>
+
+      <!-- Filters Row -->
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-body" style="padding:20px;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)) 80px; gap:12px; align-items:flex-end;">
+            
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-size:13px;">District</label>
+              <select id="filter-district" class="form-select">
+                <option value="All">All Districts</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-size:13px;">Procurement Center</label>
+              <select id="filter-center" class="form-select">
+                <option value="All">All Centers</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-size:13px;">Crop</label>
+              <select id="filter-crop" class="form-select">
+                <option value="All">All Crops</option>
+                <option value="Paddy">Paddy</option>
+                <option value="Cotton">Cotton</option>
+                <option value="Wheat">Wheat</option>
+                <option value="Maize">Maize</option>
+                <option value="Soybean">Soybean</option>
+                <option value="Red Gram">Red Gram</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" style="font-size:13px;">Specific Date</label>
+              <input type="date" id="filter-date" class="form-control">
+            </div>
+
+            <button id="reset-filters-btn" class="btn btn-outline" style="height:44px; padding:0 12px;" title="Reset filters">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schedules Table Card -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <span>📅</span>
+            <span>Active Procurement Timetable</span>
+          </h3>
+          <span id="schedules-count-badge" style="font-size:13px; font-weight:700; background:#dcfce7; color:#15803d; padding:4px 12px; border-radius:999px;">
+            Loading slots...
+          </span>
+        </div>
+
+        <div class="card-body" style="padding:0;">
+          <div class="table-responsive">
+            <table class="data-table mobile-card-table">
+              <thead>
+                <tr>
+                  <th>Procurement Date</th>
+                  <th>Crop</th>
+                  <th>Center & Location</th>
+                  <th>Remaining Quota</th>
+                  <th>Slot Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="schedule-list-tbody">
+                <!-- Populated by schedule.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-bottom">
+      <div>© 2026 KisanSetu. Ministry of Agriculture & Farmer Welfare.</div>
+      <div>
+        <a href="/help.html">Helpdesk</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/schedule.js"></script>
+</body>
+</html>

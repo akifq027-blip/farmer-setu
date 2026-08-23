@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Farmer Registration - KisanSetu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Government & Language Bar -->
+  <div class="gov-topbar">
+    <div class="container gov-topbar-inner">
+      <div class="gov-tag">
+        <span>🇮🇳</span>
+        <span>Farmer Procurement Access Portal</span>
+      </div>
+      <div class="lang-selector-group">
+        <span style="font-size:12px; opacity:0.8;">Language:</span>
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="te">తెలుగు</button>
+        <button class="lang-btn" data-lang="hi">हिन्दी</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">🌾</div>
+        <div class="brand-text">
+          <h1>KisanSetu</h1>
+          <p>Farmer Registration</p>
+        </div>
+      </a>
+
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation">☰</button>
+
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link" data-i18n="nav_home">Home</a></li>
+        <li><a href="/schedule.html" class="nav-link" data-i18n="nav_schedule">Schedule</a></li>
+        <li><a href="/status.html" class="nav-link" data-i18n="nav_status">Track Status</a></li>
+        <li><a href="/centers.html" class="nav-link" data-i18n="nav_centers">Centers</a></li>
+        <li><a href="/help.html" class="nav-link" data-i18n="nav_help">Help</a></li>
+        <li class="nav-auth-btns" id="nav-auth-container">
+          <a href="/login.html" class="btn btn-outline-primary btn-sm" data-i18n="nav_login">Farmer Login</a>
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Register Form Main -->
+  <main class="main-content">
+    <div class="container" style="max-width: 680px;">
+
+      <div class="card" style="box-shadow:var(--shadow-lg); border-radius:var(--radius-xl);">
+        <div class="card-header" style="background:#f0fdf4; padding:24px 28px;">
+          <div>
+            <h2 style="font-size:22px; font-weight:800; color:#14532d;" data-i18n="nav_register">
+              Register as a Farmer
+            </h2>
+            <p style="font-size:14px; color:var(--text-muted); margin-top:4px;">
+              Create your account to book drop-off slots and get real-time token notifications.
+            </p>
+          </div>
+        </div>
+
+        <div class="card-body" style="padding:28px;">
+          <form id="farmer-register-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="reg-name">
+                  Farmer Full Name <span class="req">*</span>
+                </label>
+                <input type="text" id="reg-name" class="form-control" placeholder="e.g. Ramesh Kumar" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="reg-mobile">
+                  Mobile Number <span class="req">*</span>
+                </label>
+                <input type="tel" id="reg-mobile" class="form-control" placeholder="10-digit mobile (e.g. 9876543210)" pattern="[0-9]{10}" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="reg-email">Email Address (Optional)</label>
+                <input type="email" id="reg-email" class="form-control" placeholder="name@example.com">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="reg-lang">Preferred Language</label>
+                <select id="reg-lang" class="form-select">
+                  <option value="en">English</option>
+                  <option value="te">తెలుగు (Telugu)</option>
+                  <option value="hi">हिन्दी (Hindi)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="reg-village">Village / Town <span class="req">*</span></label>
+                <input type="text" id="reg-village" class="form-control" placeholder="e.g. Velair" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="reg-district">District <span class="req">*</span></label>
+                <input type="text" id="reg-district" class="form-control" placeholder="e.g. Warangal" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="reg-state">State <span class="req">*</span></label>
+                <select id="reg-state" class="form-select">
+                  <option value="Telangana">Telangana</option>
+                  <option value="Andhra Pradesh">Andhra Pradesh</option>
+                  <option value="Madhya Pradesh">Madhya Pradesh</option>
+                  <option value="Haryana">Haryana</option>
+                  <option value="Punjab">Punjab</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="Karnataka">Karnataka</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="reg-land">Pattadar Passbook / Land Record ID</label>
+                <input type="text" id="reg-land" class="form-control" placeholder="e.g. TS-WGL-2024-8891">
+                <div class="form-hint">Enables instant DBT bank payment verification.</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reg-password">
+                Create Password <span class="req">*</span>
+              </label>
+              <input type="password" id="reg-password" class="form-control" placeholder="At least 6 characters" minlength="6" required>
+            </div>
+
+            <div style="background:#f8fafc; padding:12px; border-radius:8px; font-size:13px; color:var(--text-muted); margin-bottom:20px;">
+              🛡️ <strong>Privacy Protection:</strong> Your land and personal data are protected by state agricultural security standards and used strictly for grain procurement and DBT disbursement.
+            </div>
+
+            <button type="submit" id="register-submit-btn" class="btn btn-primary btn-block btn-lg">
+              ✓ Complete Registration & Open Dashboard
+            </button>
+          </form>
+        </div>
+
+        <div class="card-footer" style="text-align:center; font-size:14px;">
+          Already have an account?
+          <a href="/login.html" style="font-weight:700; color:#15803d;">
+            Farmer Login →
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer" style="padding:24px 0;">
+    <div class="container" style="text-align:center; font-size:13px; color:#64748b;">
+      KisanSetu • Government Agricultural Procurement Assistance Portal
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    document.getElementById('farmer-register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        full_name: document.getElementById('reg-name').value.trim(),
+        mobile_number: document.getElementById('reg-mobile').value.trim(),
+        email: document.getElementById('reg-email').value.trim(),
+        village: document.getElementById('reg-village').value.trim(),
+        district: document.getElementById('reg-district').value.trim(),
+        state: document.getElementById('reg-state').value,
+        land_record_id: document.getElementById('reg-land').value.trim(),
+        preferred_language: document.getElementById('reg-lang').value,
+        password: document.getElementById('reg-password').value
+      };
+
+      const btn = document.getElementById('register-submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Registering farmer...';
+
+      try {
+        const res = await API.register(payload);
+        if (res.success) {
+          Auth.setFarmerSession(res.farmer, res.token);
+          showToast(res.message, 'success');
+          setTimeout(() => window.location.href = '/dashboard.html', 500);
+        }
+      } catch (err) {
+        showToast(err.message || 'Registration failed. Please check fields.', 'error');
+        btn.disabled = false;
+        btn.textContent = '✓ Complete Registration & Open Dashboard';
+      }
+    });
+  </script>
+</body>
+</html>

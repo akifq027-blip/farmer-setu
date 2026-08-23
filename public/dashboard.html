@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farmer Dashboard - KisanSetu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Government & Language Bar -->
+  <div class="gov-topbar">
+    <div class="container gov-topbar-inner">
+      <div class="gov-tag">
+        <span>🌾</span>
+        <span>KisanSetu • Farmer Dashboard</span>
+      </div>
+      <div class="lang-selector-group">
+        <span style="font-size:12px; opacity:0.8;">Language:</span>
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="te">తెలుగు</button>
+        <button class="lang-btn" data-lang="hi">हिन्दी</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/dashboard.html" class="logo-brand">
+        <div class="logo-icon">🌾</div>
+        <div class="brand-text">
+          <h1>KisanSetu</h1>
+          <p>Farmer Portal</p>
+        </div>
+      </a>
+
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation">☰</button>
+
+      <ul class="nav-links">
+        <li><a href="/dashboard.html" class="nav-link active" data-i18n="nav_dashboard">My Dashboard</a></li>
+        <li><a href="/request.html" class="nav-link" data-i18n="nav_request">Book Slot</a></li>
+        <li><a href="/status.html" class="nav-link" data-i18n="nav_status">Track Status</a></li>
+        <li><a href="/schedule.html" class="nav-link" data-i18n="nav_schedule">Schedule</a></li>
+        <li><a href="/centers.html" class="nav-link" data-i18n="nav_centers">Centers</a></li>
+        <li><a href="/profile.html" class="nav-link" data-i18n="nav_profile">Profile</a></li>
+        <li><a href="/help.html" class="nav-link" data-i18n="nav_help">Help</a></li>
+        <li class="nav-auth-btns" id="nav-auth-container">
+          <!-- Populated by auth.js -->
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Welcome Banner -->
+      <section class="dashboard-welcome">
+        <div class="welcome-inner">
+          <div class="welcome-text">
+            <h2><span data-i18n="dash_welcome">Welcome,</span> <span id="farmer-greeting-name">Farmer</span></h2>
+            <p>Here is your digital procurement status and active token queue overview.</p>
+            <div class="farmer-meta-badges">
+              <span class="meta-badge" id="farmer-village-tag">📍 Loading village...</span>
+              <span class="meta-badge" id="farmer-mobile-tag">📱 Loading phone...</span>
+              <span class="meta-badge" style="background:#22c55e; color:#14532d; font-weight:700;">● Verified Farmer</span>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <a href="/request.html" class="btn btn-accent btn-lg" style="box-shadow:0 4px 14px rgba(0,0,0,0.2);">
+              ➕ <span data-i18n="dash_btn_new_request">Book Drop-off Slot</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Active Token Card (Dynamic Container) -->
+      <section id="active-token-container">
+        <!-- Rendered by dashboard.js -->
+        <div class="card" style="padding: 32px; text-align: center;">
+          <p>⏳ Loading your token and queue details...</p>
+        </div>
+      </section>
+
+      <!-- Quick Action Shortcuts -->
+      <div class="quick-action-cards">
+        <a href="/request.html" class="quick-action-card">
+          <div class="quick-action-icon" style="background:#dcfce7; color:#15803d;">🎟️</div>
+          <h4 data-i18n="dash_btn_new_request">Book New Crop Slot</h4>
+          <p>Generate drop-off token for Paddy, Cotton, Wheat, Maize</p>
+        </a>
+
+        <a href="/status.html" class="quick-action-card">
+          <div class="quick-action-icon" style="background:#fef3c7; color:#d97706;">🔍</div>
+          <h4 data-i18n="nav_status">Track Procurement</h4>
+          <p>Live progress from gate entry to DBT credit</p>
+        </a>
+
+        <a href="/schedule.html" class="quick-action-card">
+          <div class="quick-action-icon" style="background:#dbeafe; color:#2563eb;">📅</div>
+          <h4 data-i18n="nav_schedule">View Center Schedules</h4>
+          <p>Check date-wise slot availability across mandis</p>
+        </a>
+
+        <a href="/centers.html" class="quick-action-card">
+          <div class="quick-action-icon" style="background:#ede9fe; color:#7c3aed;">📍</div>
+          <h4 data-i18n="nav_centers">Procurement Centers</h4>
+          <p>Location maps, operating hours, and in-charge contacts</p>
+        </a>
+      </div>
+
+      <!-- Dashboard Main Grid: Recent Requests & Announcements -->
+      <div class="dashboard-grid">
+
+        <!-- Left: My Recent Procurement Requests -->
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <span>📋</span>
+                <span>My Procurement Requests & History</span>
+              </h3>
+              <a href="/request.html" class="btn btn-outline-primary btn-sm">
+                + New Slot
+              </a>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div class="table-responsive">
+                <table class="data-table mobile-card-table">
+                  <thead>
+                    <tr>
+                      <th>Token #</th>
+                      <th>Crop & Quantity</th>
+                      <th>Center</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-requests-tbody">
+                    <!-- Populated by dashboard.js -->
+                    <tr>
+                      <td colspan="6" style="text-align:center; padding:24px;">Loading requests...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Center Announcements -->
+        <div>
+          <div class="card">
+            <div class="card-header" style="background:#f8fafc;">
+              <h3 class="card-title">
+                <span>📢</span>
+                <span>Center Announcements</span>
+              </h3>
+            </div>
+            <div class="card-body" id="dash-announcements-list">
+              <!-- Populated by dashboard.js -->
+              <p>Loading notices...</p>
+            </div>
+          </div>
+
+          <!-- Document Checklist Reminder Card -->
+          <div class="card" style="background:#f0fdf4; border-color:#bbf7d0;">
+            <div class="card-body">
+              <h4 style="color:#14532d; font-weight:800; font-size:16px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                <span>📋</span> What to bring to the center:
+              </h4>
+              <ul style="font-size:13px; color:#166534; line-height:1.6; padding-left:20px;">
+                <li>Original Aadhaar card for biometric scan</li>
+                <li>Pattadar Passbook / Land Record (1B)</li>
+                <li>Bank passbook copy with clear IFSC</li>
+                <li>Token slip (printed or on phone)</li>
+              </ul>
+              <a href="/help.html" style="font-size:13px; font-weight:700; color:#15803d; display:inline-block; margin-top:8px;">
+                View complete document guide →
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal for Token Slip Printable View -->
+  <div id="token-modal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 style="font-size:18px; font-weight:800; color:#14532d;">Procurement Token Slip</h3>
+        <button class="modal-close" onclick="closeTokenModal()">✕</button>
+      </div>
+      <div class="modal-body" id="token-modal-body" style="padding:24px;">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-bottom">
+      <div>© 2026 KisanSetu. Ministry of Agriculture & Farmer Welfare.</div>
+      <div>
+        <a href="/help.html">Helpdesk Support</a> |
+        <a href="/admin/login.html">Admin</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

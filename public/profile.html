@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farmer Profile - KisanSetu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Government & Language Bar -->
+  <div class="gov-topbar">
+    <div class="container gov-topbar-inner">
+      <div class="gov-tag">
+        <span>🌾</span>
+        <span>KisanSetu • Farmer Profile</span>
+      </div>
+      <div class="lang-selector-group">
+        <span style="font-size:12px; opacity:0.8;">Language:</span>
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="te">తెలుగు</button>
+        <button class="lang-btn" data-lang="hi">हिन्दी</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/dashboard.html" class="logo-brand">
+        <div class="logo-icon">🌾</div>
+        <div class="brand-text">
+          <h1>KisanSetu</h1>
+          <p>Farmer Profile</p>
+        </div>
+      </a>
+
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation">☰</button>
+
+      <ul class="nav-links">
+        <li><a href="/dashboard.html" class="nav-link" data-i18n="nav_dashboard">My Dashboard</a></li>
+        <li><a href="/request.html" class="nav-link" data-i18n="nav_request">Book Slot</a></li>
+        <li><a href="/status.html" class="nav-link" data-i18n="nav_status">Track Status</a></li>
+        <li><a href="/schedule.html" class="nav-link" data-i18n="nav_schedule">Schedule</a></li>
+        <li><a href="/profile.html" class="nav-link active" data-i18n="nav_profile">Profile</a></li>
+        <li><a href="/help.html" class="nav-link" data-i18n="nav_help">Help</a></li>
+        <li class="nav-auth-btns" id="nav-auth-container">
+          <!-- Populated by auth.js -->
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container" style="max-width: 860px;">
+
+      <!-- Profile Header Summary Card -->
+      <div class="card" style="margin-bottom:28px; background:var(--primary); color:#fff; border:2px solid var(--border);">
+        <div class="card-body" style="padding:32px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
+          <div style="display:flex; align-items:center; gap:18px;">
+            <div style="width:68px; height:68px; background:rgba(255,255,255,0.18); border:2px solid var(--primary-tint); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px;">
+              👨‍🌾
+            </div>
+            <div>
+              <h2 id="profile-name" style="font-size:26px; font-weight:900; color:#fff; margin-bottom:4px;">
+                Loading Name...
+              </h2>
+              <div style="color:var(--primary-border); font-size:14px; font-weight:600;">
+                <span id="profile-village-display">-</span> • <span id="profile-mobile-display">-</span>
+              </div>
+              <div style="font-size:12px; color:var(--primary-tint); font-weight:700; margin-top:4px;">
+                Land Passbook: <strong id="profile-pattadar-display">-</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats Badges -->
+          <div style="display:flex; gap:16px;">
+            <div style="background:rgba(255,255,255,0.12); border:1px solid rgba(216,226,220,0.3); padding:12px 18px; border-radius:var(--radius-md); text-align:center;">
+              <div id="stat-total-requests" style="font-size:24px; font-weight:900; color:var(--accent);">0</div>
+              <div style="font-size:11px; opacity:0.9; text-transform:uppercase; font-weight:700;">Total Slots</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.12); border:1px solid rgba(216,226,220,0.3); padding:12px 18px; border-radius:var(--radius-md); text-align:center;">
+              <div id="stat-completed-procurements" style="font-size:24px; font-weight:900; color:#4ADE80;">0</div>
+              <div style="font-size:11px; opacity:0.9; text-transform:uppercase; font-weight:700;">Completed</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.12); border:1px solid rgba(216,226,220,0.3); padding:12px 18px; border-radius:var(--radius-md); text-align:center;">
+              <div id="stat-total-quintals" style="font-size:24px; font-weight:900; color:#fff;">0 Qtl</div>
+              <div style="font-size:11px; opacity:0.9; text-transform:uppercase; font-weight:700;">Total Sold</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Edit Form Card -->
+      <div class="card">
+        <div class="card-header" style="background:#f8fafc;">
+          <h3 class="card-title">
+            <span>⚙️</span>
+            <span>Update Account & Farm Information</span>
+          </h3>
+        </div>
+
+        <div class="card-body" style="padding:28px;">
+          <form id="profile-update-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="input-full-name">Full Name</label>
+                <input type="text" id="input-full-name" class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="input-email">Email Address</label>
+                <input type="email" id="input-email" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="input-village">Village / Habitation</label>
+                <input type="text" id="input-village" class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="input-district">District</label>
+                <input type="text" id="input-district" class="form-control" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="input-state">State</label>
+                <input type="text" id="input-state" class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="input-land-record">Pattadar Passbook / Land Record ID</label>
+                <input type="text" id="input-land-record" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="input-language">Preferred Interface Language</label>
+              <select id="input-language" class="form-select">
+                <option value="en">English</option>
+                <option value="te">తెలుగు (Telugu)</option>
+                <option value="hi">हिन्दी (Hindi)</option>
+              </select>
+            </div>
+
+            <button type="submit" id="save-profile-btn" class="btn btn-primary btn-lg">
+              Save Profile Changes
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-bottom">
+      <div>© 2026 KisanSetu. Ministry of Agriculture & Farmer Welfare.</div>
+      <div>
+        <a href="/help.html">Helpdesk</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/profile.js"></script>
+</body>
+</html>

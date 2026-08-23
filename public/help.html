@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farmer Helpdesk & FAQs - KisanSetu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Government & Language Bar -->
+  <div class="gov-topbar">
+    <div class="container gov-topbar-inner">
+      <div class="gov-tag">
+        <span>🌾</span>
+        <span>KisanSetu • Farmer Support & Helpdesk</span>
+      </div>
+      <div class="lang-selector-group">
+        <span style="font-size:12px; opacity:0.8;">Language:</span>
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="te">తెలుగు</button>
+        <button class="lang-btn" data-lang="hi">हिन्दी</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">🌾</div>
+        <div class="brand-text">
+          <h1>KisanSetu</h1>
+          <p>Helpdesk & Support</p>
+        </div>
+      </a>
+
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation">☰</button>
+
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link" data-i18n="nav_home">Home</a></li>
+        <li><a href="/schedule.html" class="nav-link" data-i18n="nav_schedule">Schedule</a></li>
+        <li><a href="/status.html" class="nav-link" data-i18n="nav_status">Track Status</a></li>
+        <li><a href="/centers.html" class="nav-link" data-i18n="nav_centers">Centers</a></li>
+        <li><a href="/request.html" class="nav-link" data-i18n="nav_request">Book Slot</a></li>
+        <li><a href="/help.html" class="nav-link active" data-i18n="nav_help">Help</a></li>
+        <li class="nav-auth-btns" id="nav-auth-container">
+          <!-- Populated by auth.js -->
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container" style="max-width: 920px;">
+
+      <!-- Help Header -->
+      <div class="section-header" style="text-align:left; margin-bottom:32px;">
+        <div class="section-subtitle">Support Center</div>
+        <h2 class="section-title">Farmer Assistance & Helpdesk</h2>
+        <p class="section-desc">Get instant guidance regarding MSP grain procurement, digital queue tokens, moisture limits, and DBT bank account linking.</p>
+      </div>
+
+      <!-- Emergency Helpline Grid -->
+      <div class="features-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:20px; margin-bottom:36px;">
+        <div class="card" style="padding:24px 20px; text-align:center; background:var(--primary-light); border:2px solid var(--primary-border);">
+          <div style="font-size:32px; margin-bottom:8px;">📞</div>
+          <h4 style="font-size:16px; font-weight:800; color:var(--primary-dark);">Toll-Free Kisan Call Center</h4>
+          <div style="font-size:22px; font-weight:900; color:var(--primary); margin:6px 0;">1800-180-1551</div>
+          <p style="font-size:12px; color:var(--text-muted); font-weight:600;">Available 6:00 AM - 10:00 PM (All Indian Languages)</p>
+        </div>
+
+        <div class="card" style="padding:24px 20px; text-align:center; background:var(--accent-light); border:2px solid var(--accent-border);">
+          <div style="font-size:32px; margin-bottom:8px;">⚖️</div>
+          <h4 style="font-size:16px; font-weight:800; color:#92400E;">Civil Supplies Control Room</h4>
+          <div style="font-size:22px; font-weight:900; color:var(--accent); margin:6px 0;">1967</div>
+          <p style="font-size:12px; color:var(--text-muted); font-weight:600;">For Weighment & Quality Disputes</p>
+        </div>
+
+        <div class="card" style="padding:24px 20px; text-align:center; background:#F8F9F1; border:2px solid var(--border);">
+          <div style="font-size:32px; margin-bottom:8px;">💳</div>
+          <h4 style="font-size:16px; font-weight:800; color:var(--primary-dark);">DBT Bank Transfer Support</h4>
+          <div style="font-size:22px; font-weight:900; color:var(--secondary); margin:6px 0;">040-23450671</div>
+          <p style="font-size:12px; color:var(--text-muted); font-weight:600;">For Payment Status Inquiries</p>
+        </div>
+      </div>
+
+      <!-- FAQ Section -->
+      <div class="card" style="margin-bottom:36px;">
+        <div class="card-header" style="background:#f8fafc;">
+          <h3 class="card-title">
+            <span>❓</span>
+            <span>Frequently Asked Questions by Farmers</span>
+          </h3>
+        </div>
+
+        <div class="card-body" style="padding:16px 24px;">
+          
+          <div class="faq-accordion-item">
+            <button class="faq-question">
+              <span>How does the digital token queue system save my time at the mandi?</span>
+              <span class="faq-toggle-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              When you book a slot on KisanSetu, you receive an exact token number and an estimated reporting time. You do not need to stand in line with your tractor for days; simply track the live "Farmers Ahead of You" counter on your phone and arrive 30 minutes before your turn.
+            </div>
+          </div>
+
+          <div class="faq-accordion-item">
+            <button class="faq-question">
+              <span>What original documents must I bring to the procurement center?</span>
+              <span class="faq-toggle-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              1. <strong>Original Aadhaar Card:</strong> Required for biometric fingerprint authentication at the entrance gate.<br>
+              2. <strong>Pattadar Passbook / Land Record (1B/RoR):</strong> To verify land ownership and crop sowing details.<br>
+              3. <strong>Aadhaar-Linked Bank Passbook Copy:</strong> To verify your account for Direct Benefit Transfer (DBT).<br>
+              4. <strong>Token Pass:</strong> Either printed or displayed on your mobile screen.
+            </div>
+          </div>
+
+          <div class="faq-accordion-item">
+            <button class="faq-question">
+              <span>What are the moisture content rules for Paddy and Cotton?</span>
+              <span class="faq-toggle-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              As per Fair Average Quality (FAQ) standards:
+              <ul>
+                <li><strong>Paddy (Common / Grade A):</strong> Moisture must not exceed 17%. Produce with up to 17% receives full MSP.</li>
+                <li><strong>Cotton:</strong> Moisture between 8% and 12% is acceptable with standard moisture refraction discounts above 8%.</li>
+                <li><strong>Maize / Wheat:</strong> Moisture should be below 14%.</li>
+              </ul>
+              Please sun-dry your grain adequately before loading onto transport vehicles.
+            </div>
+          </div>
+
+          <div class="faq-accordion-item">
+            <button class="faq-question">
+              <span>How many days does it take for the MSP payment to reach my bank account?</span>
+              <span class="faq-toggle-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              After successful electronic weighment and quality sampling at the weighbridge, an automated E-Weighment receipt is generated. The payment is sanctioned and credited directly to your Aadhaar-linked bank account within <strong>48 to 72 banking hours</strong> via the PFMS/DBT gateway.
+            </div>
+          </div>
+
+          <div class="faq-accordion-item">
+            <button class="faq-question">
+              <span>Can I book a procurement slot without a smartphone?</span>
+              <span class="faq-toggle-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              Yes! You can visit your local Gram Panchayat Rythu Vedika, MeeSeva / CSC Center, or call the toll-free helpline 1800-180-1551. The village agriculture extension officer (AEO) will book your token slot online on your behalf.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Grievance & Query Form -->
+      <div class="card">
+        <div class="card-header" style="background:#f0fdf4;">
+          <h3 class="card-title">
+            <span>📝</span>
+            <span>Register a Grievance or Ask a Question</span>
+          </h3>
+        </div>
+
+        <div class="card-body" style="padding:28px;">
+          <form id="helpdesk-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="query-name">Your Full Name <span class="req">*</span></label>
+                <input type="text" id="query-name" class="form-control" placeholder="Farmer Name" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="query-mobile">Mobile Number <span class="req">*</span></label>
+                <input type="tel" id="query-mobile" class="form-control" placeholder="10-digit mobile" pattern="[0-9]{10}" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="query-type">Grievance Category</label>
+              <select id="query-type" class="form-select">
+                <option value="token">Token & Queue Delay Issue</option>
+                <option value="payment">Payment / DBT Delay</option>
+                <option value="quality">Quality / Moisture Assessment Dispute</option>
+                <option value="center">Center Facilities & Gunny Bags Availability</option>
+                <option value="other">General Query</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="query-message">Explain Your Issue / Query <span class="req">*</span></label>
+              <textarea id="query-message" class="form-control" rows="4" placeholder="Please mention your Token Number, Center Name, and exact issue..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg">
+              ✉️ Submit Grievance Ticket
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-bottom">
+      <div>© 2026 KisanSetu. Ministry of Agriculture & Farmer Welfare.</div>
+      <div>
+        <a href="/admin/login.html">Officer Portal</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/help.js"></script>
+</body>
+</html>

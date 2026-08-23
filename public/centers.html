@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procurement Centers & Mandis - KisanSetu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+
+  <!-- Top Government & Language Bar -->
+  <div class="gov-topbar">
+    <div class="container gov-topbar-inner">
+      <div class="gov-tag">
+        <span>🌾</span>
+        <span>KisanSetu • Center Locator</span>
+      </div>
+      <div class="lang-selector-group">
+        <span style="font-size:12px; opacity:0.8;">Language:</span>
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="te">తెలుగు</button>
+        <button class="lang-btn" data-lang="hi">हिन्दी</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">🌾</div>
+        <div class="brand-text">
+          <h1>KisanSetu</h1>
+          <p>Procurement Centers</p>
+        </div>
+      </a>
+
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation">☰</button>
+
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link" data-i18n="nav_home">Home</a></li>
+        <li><a href="/schedule.html" class="nav-link" data-i18n="nav_schedule">Schedule</a></li>
+        <li><a href="/status.html" class="nav-link" data-i18n="nav_status">Track Status</a></li>
+        <li><a href="/centers.html" class="nav-link active" data-i18n="nav_centers">Centers</a></li>
+        <li><a href="/request.html" class="nav-link" data-i18n="nav_request">Book Slot</a></li>
+        <li><a href="/help.html" class="nav-link" data-i18n="nav_help">Help</a></li>
+        <li class="nav-auth-btns" id="nav-auth-container">
+          <!-- Populated by auth.js -->
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Page Header -->
+      <div class="section-header" style="text-align:left; margin-bottom:24px;">
+        <div class="section-subtitle">Official Mandis & PACS</div>
+        <h2 class="section-title">Government Procurement Centers</h2>
+        <p class="section-desc">Locate authorized APMC yards, Primary Agricultural Credit Societies (PACS), and FCI purchase points in your district.</p>
+      </div>
+
+      <!-- Search & Filter Bar -->
+      <div class="card" style="margin-bottom:28px;">
+        <div class="card-body" style="padding:20px;">
+          <div style="display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:12px;">
+            <div>
+              <input
+                type="text"
+                id="center-search-input"
+                class="form-control"
+                placeholder="🔍 Search by center name, village, or town..."
+              >
+            </div>
+            <div>
+              <select id="center-district-filter" class="form-select">
+                <option value="All">All Districts</option>
+              </select>
+            </div>
+            <div>
+              <select id="center-crop-filter" class="form-select">
+                <option value="All">All Accepted Crops</option>
+                <option value="Paddy">Paddy</option>
+                <option value="Cotton">Cotton</option>
+                <option value="Wheat">Wheat</option>
+                <option value="Maize">Maize</option>
+                <option value="Soybean">Soybean</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Centers Grid -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="font-size:18px; font-weight:800; color:#14532d;">
+          Available Mandis & Purchase Centers
+        </h3>
+        <span id="centers-count-badge" style="font-size:13px; font-weight:700; background:#f1f5f9; padding:4px 12px; border-radius:999px;">
+          Loading...
+        </span>
+      </div>
+
+      <div class="features-grid" id="centers-grid" style="grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:24px;">
+        <!-- Populated by centers.js -->
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-bottom">
+      <div>© 2026 KisanSetu. Ministry of Agriculture & Farmer Welfare.</div>
+      <div>
+        <a href="/help.html">Helpdesk</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/centers.js"></script>
+</body>
+</html>

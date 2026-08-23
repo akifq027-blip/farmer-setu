@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Officer Admin Login - KisanSetu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body style="background: #0f172a; color: #f8fafc;">
+
+  <!-- Main Login Box -->
+  <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div style="width: 100%; max-width: 440px;">
+      
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="/" style="display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #ffffff;">
+          <div style="font-size: 32px;">🌾</div>
+          <div style="text-align: left;">
+            <h1 style="font-size: 22px; font-weight: 800; line-height: 1;">KisanSetu</h1>
+            <span style="font-size: 12px; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase;">Procurement Officer Portal</span>
+          </div>
+        </a>
+      </div>
+
+      <div class="card" style="background: #1e293b; border-color: #334155; color: #f8fafc; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+        <div class="card-header" style="background: #0f172a; border-color: #334155; text-align: center; flex-direction: column; padding: 24px;">
+          <div style="width: 48px; height: 48px; background: #166534; color: #4ade80; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 8px;">
+            🛡️
+          </div>
+          <h2 style="font-size: 20px; font-weight: 800; color: #ffffff;">Officer Authentication</h2>
+          <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Authorized mandi in-charges & civil supplies officers only</p>
+        </div>
+
+        <div class="card-body" style="padding: 24px;">
+          <form id="admin-login-form">
+            <div class="form-group">
+              <label class="form-label" style="color: #cbd5e1;" for="admin-email">Officer Email</label>
+              <input
+                type="email"
+                id="admin-email"
+                class="form-control"
+                placeholder="Enter officer email (e.g. akifquadri000@gmail.com)"
+                required
+                style="background: #0f172a; border-color: #475569; color: #ffffff;"
+              >
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="color: #cbd5e1;" for="admin-password">Password</label>
+              <input
+                type="password"
+                id="admin-password"
+                class="form-control"
+                placeholder="••••••••"
+                required
+                style="background: #0f172a; border-color: #475569; color: #ffffff;"
+              >
+            </div>
+
+            <button type="submit" id="admin-login-btn" class="btn btn-primary btn-block btn-lg" style="margin-top: 8px;">
+              ⚡ Access Officer Dashboard
+            </button>
+          </form>
+
+          <div style="margin-top: 20px; padding: 12px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(71, 85, 105, 0.4); border-radius: 8px; font-size: 12px; color: #94a3b8; text-align: center;">
+            🔒 <strong>Confidential Access:</strong> Restricted to authorized government procurement officers.
+          </div>
+        </div>
+
+        <div class="card-footer" style="background: #0f172a; border-color: #334155; text-align: center;">
+          <a href="/" style="color: #94a3b8; font-size: 13px; text-decoration: none;">
+            ← Return to Farmer Public Portal
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-password').value;
+      const btn = document.getElementById('admin-login-btn');
+
+      btn.disabled = true;
+      btn.textContent = 'Authenticating...';
+
+      try {
+        const res = await API.adminLogin(email, password);
+        if (res.success) {
+          Auth.setAdminSession(res.admin, res.token);
+          showToast('Officer session established', 'success');
+          setTimeout(() => {
+            window.location.href = '/admin/index.html';
+          }, 400);
+        }
+      } catch (err) {
+        showToast(err.message || 'Invalid officer credentials', 'error');
+        btn.disabled = false;
+        btn.textContent = '⚡ Access Officer Dashboard';
+      }
+    });
+  </script>
+</body>
+</html>
