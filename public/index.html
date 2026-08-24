@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/responsive.css">
+  <link rel="stylesheet" href="/css/voice-assistant.css">
 </head>
 <body>
 
@@ -72,6 +73,9 @@
         </p>
 
         <div class="hero-cta-group">
+          <button onclick="window.KisanVoiceAssistant && window.KisanVoiceAssistant.open()" class="btn btn-lg" style="background:#FF9F1C; color:#1B4332; font-weight:800; border:2px solid #FFFFFF; box-shadow:0 6px 18px rgba(255,159,28,0.45); display:inline-flex; align-items:center; gap:8px;">
+            🎙️ <span>बोलकर पूछें / మాట్లాడండి (Voice AI)</span>
+          </button>
           <a href="/schedule.html" class="btn btn-accent btn-lg" style="font-weight:700;">
             📅 <span data-i18n="hero_btn_schedule">Check Schedule</span>
           </a>
@@ -351,5 +355,6 @@
   <script src="/js/common.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
+  <script src="/js/voice-assistant.js"></script>
 </body>
 </html>

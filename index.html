@@ -1,18 +1,360 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-    <meta name="description" content="An application built with Google AI Studio." />
-    <meta property="og:title" content="My Google AI Studio App" />
-    <meta property="og:description" content="An application built with Google AI Studio." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KisanSetu - Digital Farmer Crop Procurement & Token Queue System</title>
+  <meta name="description" content="Online grain & crop procurement slot booking, live token queue tracking, and MSP payment assistance for farmers.">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+  <link rel="stylesheet" href="/css/voice-assistant.css">
+</head>
+<body>
 
+  <!-- Top Government & Language Bar -->
+  <div class="gov-topbar">
+    <div class="container gov-topbar-inner">
+      <div class="gov-tag">
+        <span>🇮🇳</span>
+        <span>Department of Agriculture & Food Civil Supplies</span>
+      </div>
+      <div class="lang-selector-group">
+        <span style="font-size:12px; opacity:0.8;">Language / భాష / भाषा:</span>
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="te">తెలుగు</button>
+        <button class="lang-btn" data-lang="hi">हिन्दी</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">🌾</div>
+        <div class="brand-text">
+          <h1>KisanSetu</h1>
+          <p>Farmer Procurement Portal</p>
+        </div>
+      </a>
+
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation">☰</button>
+
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link active" data-i18n="nav_home">Home</a></li>
+        <li><a href="/schedule.html" class="nav-link" data-i18n="nav_schedule">Schedule</a></li>
+        <li><a href="/status.html" class="nav-link" data-i18n="nav_status">Track Status</a></li>
+        <li><a href="/centers.html" class="nav-link" data-i18n="nav_centers">Centers</a></li>
+        <li><a href="/request.html" class="nav-link" data-i18n="nav_request">Book Slot</a></li>
+        <li><a href="/help.html" class="nav-link" data-i18n="nav_help">Help</a></li>
+        <li class="nav-auth-btns" id="nav-auth-container">
+          <!-- Populated by auth.js -->
+          <a href="/login.html" class="btn btn-outline-primary btn-sm" data-i18n="nav_login">Farmer Login</a>
+          <a href="/register.html" class="btn btn-primary btn-sm" data-i18n="nav_register">Register</a>
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container hero-grid">
+      <div>
+        <div class="hero-badge">
+          <span>🌾</span>
+          <span data-i18n="hero_badge">Government Agricultural Digital Procurement</span>
+        </div>
+        <h2 class="hero-title" data-i18n="hero_title">
+          Know Your Procurement Date. Track Your Token. Save Your Time.
+        </h2>
+        <p class="hero-desc" data-i18n="hero_desc">
+          Direct government procurement platform for farmers. Book crop drop-off slots online, check live token queue positions, eliminate mandi waiting lines, and receive guaranteed MSP payment directly to your bank account.
+        </p>
+
+        <div class="hero-cta-group">
+          <button onclick="window.KisanVoiceAssistant && window.KisanVoiceAssistant.open()" class="btn btn-lg" style="background:#FF9F1C; color:#1B4332; font-weight:800; border:2px solid #FFFFFF; box-shadow:0 6px 18px rgba(255,159,28,0.45); display:inline-flex; align-items:center; gap:8px;">
+            🎙️ <span>बोलकर पूछें / మాట్లాడండి (Voice AI)</span>
+          </button>
+          <a href="/schedule.html" class="btn btn-accent btn-lg" style="font-weight:700;">
+            📅 <span data-i18n="hero_btn_schedule">Check Schedule</span>
+          </a>
+          <a href="/status.html" class="btn btn-outline-primary btn-lg" style="background:#ffffff; color:#14532d; font-weight:700;">
+            🔍 <span data-i18n="hero_btn_status">Track My Token</span>
+          </a>
+          <a href="/request.html" class="btn btn-outline btn-lg" style="color:#ffffff; border-color:rgba(255,255,255,0.4); font-weight:600;">
+            🎟️ <span data-i18n="hero_btn_request">Book Drop-off Slot</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Check Token Box -->
+      <div>
+        <div class="hero-quick-card">
+          <h3 class="quick-card-title">
+            <span>🎟️</span>
+            <span>Check Your Token / Queue Number</span>
+          </h3>
+          <p style="font-size:14px; color:var(--text-muted); margin-bottom:18px;">
+            Already have a token slip? Enter your token number (e.g., A-104) to see your real-time position in line.
+          </p>
+          <form action="/status.html" method="GET">
+            <div class="form-group" style="margin-bottom:14px;">
+              <input type="text" name="token" class="form-control" placeholder="Enter Token Number (e.g. A-104)" required style="font-size:16px; font-weight:700; text-transform:uppercase;">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block btn-lg" style="font-size:16px;">
+              🔍 Check Waiting Status
+            </button>
+          </form>
+          <div style="margin-top:14px; text-align:center; font-size:13px; color:var(--text-muted);">
+            New farmer? <a href="/register.html" style="font-weight:700; color:#15803d;">Register your farm details</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Feature Cards Grid -->
+      <section style="margin-bottom: 64px;">
+        <div class="section-header">
+          <div class="section-subtitle">How KisanSetu Helps Farmers</div>
+          <h2 class="section-title">Transparent & Hassle-Free Procurement</h2>
+          <p class="section-desc">Designed specifically for ease of use by farmers to eliminate uncertainty and long waiting hours at agricultural market yards.</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Card 1 -->
+          <div class="feature-card">
+            <div class="feature-icon-box green">📅</div>
+            <h3 data-i18n="feat_schedule_title">Procurement Schedule</h3>
+            <p data-i18n="feat_schedule_desc">View center-wise date timetables, crop availability, and open slots before starting from your village.</p>
+            <a href="/schedule.html" class="btn btn-outline-primary btn-sm">View Timetable →</a>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="feature-card">
+            <div class="feature-icon-box amber">🎟️</div>
+            <h3 data-i18n="feat_token_title">Live Token & Queue</h3>
+            <p data-i18n="feat_token_desc">Get an instant digital token number. Check how many farmers are ahead of you in real time.</p>
+            <a href="/request.html" class="btn btn-outline-primary btn-sm">Get Token →</a>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="feature-card">
+            <div class="feature-icon-box blue">📊</div>
+            <h3 data-i18n="feat_status_title">Your Procurement Status</h3>
+            <p data-i18n="feat_status_desc">Track every step from gate entry, weighbridge sampling, and moisture check to direct bank payment.</p>
+            <a href="/status.html" class="btn btn-outline-primary btn-sm">Track Progress →</a>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="feature-card">
+            <div class="feature-icon-box purple">📢</div>
+            <h3 data-i18n="feat_updates_title">Instant Announcements</h3>
+            <p data-i18n="feat_updates_desc">Receive real-time alerts regarding mandi timings, additional counters, and moisture regulations.</p>
+            <a href="#announcements-section" class="btn btn-outline-primary btn-sm">See Alerts →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5-Step Process Section -->
+      <section style="margin-bottom: 64px;">
+        <div class="section-header">
+          <div class="section-subtitle">Simple 5 Steps</div>
+          <h2 class="section-title">How Crop Procurement Works</h2>
+        </div>
+
+        <div class="steps-container">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <h4>Register Farmer</h4>
+            <p>One-time simple registration with mobile number, village, and land record ID.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <h4>Book Crop Slot</h4>
+            <p>Select your crop (Paddy, Cotton, Wheat, etc.), quantity, center, and preferred date.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <h4>Get Digital Token</h4>
+            <p>Receive your unique token pass with estimated reporting time.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">4</div>
+            <h4>Visit Center</h4>
+            <p>Arrive with your produce and vehicle when your queue position is called.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">5</div>
+            <h4>Direct Bank Credit</h4>
+            <p>Weighment slip generated instantly; MSP funds credited directly via DBT.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Announcements & Center Finder Row -->
+      <div style="display:grid; grid-template-columns:1.2fr 0.8fr; gap:28px; margin-bottom: 64px;" id="announcements-section">
+        
+        <!-- Announcements Column -->
+        <div class="card">
+          <div class="card-header" style="background:#f8fafc;">
+            <h3 class="card-title">
+              <span>📢</span>
+              <span>Latest Procurement Announcements</span>
+            </h3>
+            <span style="font-size:12px; color:var(--text-muted);">Real-Time Updates</span>
+          </div>
+          <div class="card-body" id="home-announcements-list">
+            <!-- Loaded via api -->
+            <div class="announcement-item urgent">
+              <div class="announcement-icon">🚨</div>
+              <div class="announcement-content">
+                <h4>Extra Weighment Counters Opened at Warangal Center</h4>
+                <p>Due to high arrivals of Paddy (Grade A), two additional weighbridge electronic counters have been activated today to reduce waiting time to under 30 minutes.</p>
+                <div class="announcement-meta">📍 APMC Main Yard - Warangal • Priority: Urgent</div>
+              </div>
+            </div>
+            <div class="announcement-item normal">
+              <div class="announcement-icon">📢</div>
+              <div class="announcement-content">
+                <h4>Moisture Standards Notice for Paddy & Soybean</h4>
+                <p>Farmers are requested to ensure crop moisture content is below 17% for Paddy and 12% for Soybean before arriving at the procurement center for instant quality approval.</p>
+                <div class="announcement-meta">📍 All Centers • Standard Notice</div>
+              </div>
+            </div>
+            <div class="announcement-item info">
+              <div class="announcement-icon">ℹ️</div>
+              <div class="announcement-content">
+                <h4>Direct Benefit Transfer (DBT) Payment Timeline</h4>
+                <p>All MSP procurement payments for approved weighment slips will be credited directly to registered farmer bank accounts within 48 to 72 bank working hours.</p>
+                <div class="announcement-meta">📍 All Centers • Payment Advisory</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Help & Checklist Card -->
+        <div class="card">
+          <div class="card-header" style="background:#f8fafc;">
+            <h3 class="card-title">
+              <span>📋</span>
+              <span data-i18n="docs_to_bring">What Documents to Bring</span>
+            </h3>
+          </div>
+          <div class="card-body">
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:14px; font-size:14px;">
+              <li style="display:flex; align-items:flex-start; gap:10px;">
+                <span style="color:#15803d; font-weight:800; font-size:16px;">✓</span>
+                <div>
+                  <strong>Original Aadhaar Card</strong>
+                  <div style="font-size:12px; color:var(--text-muted);">Required at the gate for biometric farmer verification.</div>
+                </div>
+              </li>
+              <li style="display:flex; align-items:flex-start; gap:10px;">
+                <span style="color:#15803d; font-weight:800; font-size:16px;">✓</span>
+                <div>
+                  <strong>Pattadar Passbook / Land Record</strong>
+                  <div style="font-size:12px; color:var(--text-muted);">RoR / Khasra / 1B land ownership or tenancy proof.</div>
+                </div>
+              </li>
+              <li style="display:flex; align-items:flex-start; gap:10px;">
+                <span style="color:#15803d; font-weight:800; font-size:16px;">✓</span>
+                <div>
+                  <strong>Bank Passbook Copy (Aadhaar-Linked)</strong>
+                  <div style="font-size:12px; color:var(--text-muted);">With clear Account Number & IFSC code for direct DBT credit.</div>
+                </div>
+              </li>
+              <li style="display:flex; align-items:flex-start; gap:10px;">
+                <span style="color:#15803d; font-weight:800; font-size:16px;">✓</span>
+                <div>
+                  <strong>Printed or Mobile Digital Token Slip</strong>
+                  <div style="font-size:12px; color:var(--text-muted);">Generated on this portal for swift gate priority entry.</div>
+                </div>
+              </li>
+            </ul>
+
+            <div style="margin-top:24px; padding:16px; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0; text-align:center;">
+              <div style="font-weight:700; color:#14532d; font-size:15px; margin-bottom:4px;">Need Help or Guidance?</div>
+              <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Call our toll-free farmer helpline anytime.</p>
+              <a href="/help.html" class="btn btn-outline-primary btn-sm btn-block">
+                📞 View Farmer Helpdesk & FAQs
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <div class="footer-brand">
+          <h3 style="display:flex; align-items:center; gap:8px;">
+            <span>🌾</span> KisanSetu Portal
+          </h3>
+          <p style="color:#94a3b8; font-size:13px; line-height:1.6;">
+            A unified digital agriculture procurement initiative designed to empower farmers with transparent queue tokens, eliminate middleman delays, and safeguard fair Minimum Support Price (MSP) grain transactions.
+          </p>
+        </div>
+      </div>
+
+      <div class="footer-links">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="/schedule.html">Procurement Schedule</a></li>
+          <li><a href="/status.html">Track Token Status</a></li>
+          <li><a href="/centers.html">Procurement Centers</a></li>
+          <li><a href="/request.html">Book Drop-off Slot</a></li>
+          <li><a href="/help.html">Farmer Help & FAQs</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links">
+        <h4>Farmer Services</h4>
+        <ul>
+          <li><a href="/login.html">Farmer Login</a></li>
+          <li><a href="/register.html">Farmer Registration</a></li>
+          <li><a href="/dashboard.html">My Dashboard</a></li>
+          <li><a href="/profile.html">My Profile</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links">
+        <h4>Helpline & Admin</h4>
+        <ul>
+          <li style="color:#ffffff; font-weight:700;">Toll-Free: 1800-180-1551</li>
+          <li style="font-size:13px; color:#94a3b8;">Hours: 7:00 AM - 8:00 PM</li>
+          <li style="margin-top:16px;">
+            <a href="/admin/login.html" style="color:#4ade80; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+              🛡️ Procurement Officer Admin
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="container footer-bottom">
+      <div>© 2026 KisanSetu. Ministry of Agriculture & Farmer Welfare. All Rights Reserved.</div>
+      <div style="display:flex; gap:16px;">
+        <a href="/help.html">Privacy Policy</a>
+        <a href="/help.html">Terms of Service</a>
+        <a href="/admin/login.html">Officer Portal</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/voice-assistant.js"></script>
+</body>
+</html>

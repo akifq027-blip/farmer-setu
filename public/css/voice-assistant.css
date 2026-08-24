@@ -1,0 +1,558 @@
+/* ==========================================================================
+   KisanSetu - Gemini Voice Assistant Stylesheet for Farmers
+   Tailored for farmers and non-readers with voice-first interface, high contrast,
+   soundwave animations, large touch targets, and audio feedback.
+   ========================================================================== */
+
+/* Floating Voice Button */
+.kisan-voice-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #1B4332 0%, #2D6A4F 60%, #409167 100%);
+  color: #FFFFFF;
+  border: 3px solid #FF9F1C;
+  border-radius: 9999px;
+  padding: 12px 22px 12px 16px;
+  box-shadow: 0 10px 25px -3px rgba(27, 67, 50, 0.4), 0 0 20px rgba(255, 159, 28, 0.5);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-family: inherit;
+  outline: none;
+}
+
+.kisan-voice-fab:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 16px 32px -4px rgba(27, 67, 50, 0.5), 0 0 30px rgba(255, 159, 28, 0.7);
+}
+
+.kisan-voice-fab:active {
+  transform: scale(0.96);
+}
+
+/* Pulsing Mic Circle */
+.kisan-voice-mic-icon-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  background: #FF9F1C;
+  color: #1B4332;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(255, 159, 28, 0.5);
+}
+
+.kisan-voice-mic-icon-wrap::before,
+.kisan-voice-mic-icon-wrap::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid #FF9F1C;
+  animation: kisanPulseRing 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.kisan-voice-mic-icon-wrap::after {
+  animation-delay: 0.8s;
+}
+
+@keyframes kisanPulseRing {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+.kisan-voice-fab-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.kisan-voice-fab-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kisan-voice-fab-badge {
+  background: #FF9F1C;
+  color: #1B4332;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.kisan-voice-fab-sub {
+  font-size: 12px;
+  color: #E9F5DB;
+  font-weight: 500;
+}
+
+/* Voice Assistant Modal Overlay */
+.kisan-voice-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 34, 25, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.kisan-voice-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Voice Modal Container */
+.kisan-voice-modal {
+  background: #FFFFFF;
+  border: 3px solid #2D6A4F;
+  border-radius: 28px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  transform: translateY(20px) scale(0.95);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.kisan-voice-modal-overlay.active .kisan-voice-modal {
+  transform: translateY(0) scale(1);
+}
+
+/* Modal Header */
+.kisan-voice-header {
+  background: linear-gradient(135deg, #1B4332 0%, #2D6A4F 100%);
+  color: #FFFFFF;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px solid #FF9F1C;
+  border-radius: 24px 24px 0 0;
+}
+
+.kisan-voice-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kisan-voice-avatar {
+  width: 46px;
+  height: 46px;
+  background: #E9F5DB;
+  color: #1B4332;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border: 2px solid #FF9F1C;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.kisan-voice-header-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+.kisan-voice-header-sub {
+  font-size: 13px;
+  color: #E9F5DB;
+  margin: 0;
+}
+
+.kisan-voice-close-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  border: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.kisan-voice-close-btn:hover {
+  background: #FF9F1C;
+  color: #1B4332;
+}
+
+/* Modal Body */
+.kisan-voice-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #F8F9F1;
+}
+
+/* Big Status Banner for Non-Readers */
+.kisan-voice-status-card {
+  background: #FFFFFF;
+  border: 2px solid #D8E2DC;
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(27, 67, 50, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.kisan-voice-status-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+  display: inline-block;
+  animation: kisanFloat 2s ease-in-out infinite;
+}
+
+@keyframes kisanFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.kisan-voice-status-text {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1B4332;
+  margin-bottom: 6px;
+}
+
+.kisan-voice-status-hint {
+  font-size: 14px;
+  color: #52796F;
+  font-weight: 500;
+}
+
+/* Sound Wave Animation Visualizer */
+.kisan-audio-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 48px;
+  margin: 14px 0;
+}
+
+.kisan-audio-bar {
+  width: 6px;
+  height: 12px;
+  background: #2D6A4F;
+  border-radius: 6px;
+  transition: height 0.15s ease;
+}
+
+.kisan-audio-wave.active .kisan-audio-bar {
+  background: #FF9F1C;
+  animation: kisanWaveAnim 1s ease-in-out infinite alternate;
+}
+
+.kisan-audio-wave.speaking .kisan-audio-bar {
+  background: #409167;
+  animation: kisanSpeakingWave 0.8s ease-in-out infinite alternate;
+}
+
+.kisan-audio-wave.active .kisan-audio-bar:nth-child(1) { animation-delay: 0.1s; }
+.kisan-audio-wave.active .kisan-audio-bar:nth-child(2) { animation-delay: 0.25s; }
+.kisan-audio-wave.active .kisan-audio-bar:nth-child(3) { animation-delay: 0.4s; }
+.kisan-audio-wave.active .kisan-audio-bar:nth-child(4) { animation-delay: 0.15s; }
+.kisan-audio-wave.active .kisan-audio-bar:nth-child(5) { animation-delay: 0.3s; }
+.kisan-audio-wave.active .kisan-audio-bar:nth-child(6) { animation-delay: 0.5s; }
+.kisan-audio-wave.active .kisan-audio-bar:nth-child(7) { animation-delay: 0.2s; }
+.kisan-audio-wave.active .kisan-audio-bar:nth-child(8) { animation-delay: 0.35s; }
+
+@keyframes kisanWaveAnim {
+  0% { height: 10px; }
+  100% { height: 42px; }
+}
+
+@keyframes kisanSpeakingWave {
+  0% { height: 8px; }
+  50% { height: 36px; }
+  100% { height: 14px; }
+}
+
+/* Big Mic Button in Center */
+.kisan-voice-mic-main-btn {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #FF9F1C 0%, #F77F00 100%);
+  color: #1B4332;
+  border: 4px solid #FFFFFF;
+  border-radius: 50%;
+  font-size: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(255, 159, 28, 0.45);
+  transition: all 0.25s ease;
+  position: relative;
+  outline: none;
+}
+
+.kisan-voice-mic-main-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 14px 30px rgba(255, 159, 28, 0.6);
+}
+
+.kisan-voice-mic-main-btn.listening {
+  background: linear-gradient(135deg, #E63946 0%, #D90429 100%);
+  color: #FFFFFF;
+  animation: kisanRecordingPulse 1.5s infinite;
+}
+
+@keyframes kisanRecordingPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 24px rgba(230, 57, 70, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(230, 57, 70, 0);
+  }
+}
+
+/* Spoken Answer Box */
+.kisan-voice-response-box {
+  background: #FFFFFF;
+  border: 2px solid #2D6A4F;
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 16px rgba(27, 67, 50, 0.08);
+  display: none;
+}
+
+.kisan-voice-response-box.visible {
+  display: block;
+  animation: kisanFadeIn 0.3s ease forwards;
+}
+
+@keyframes kisanFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.kisan-voice-response-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.kisan-voice-response-badge {
+  background: #E9F5DB;
+  color: #1B4332;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kisan-voice-repeat-btn {
+  background: #2D6A4F;
+  color: #FFFFFF;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.kisan-voice-repeat-btn:hover {
+  background: #1B4332;
+  transform: translateY(-1px);
+}
+
+.kisan-voice-response-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1B4332;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* Action Link Button */
+.kisan-voice-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FF9F1C;
+  color: #1B4332;
+  padding: 10px 18px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 14px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 10px rgba(255, 159, 28, 0.3);
+}
+
+.kisan-voice-action-btn:hover {
+  background: #F77F00;
+  transform: translateY(-2px);
+}
+
+/* One-Tap Voice Topics for Non-Readers */
+.kisan-voice-topics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kisan-voice-topics-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1B4332;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kisan-voice-topics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.kisan-voice-topic-card {
+  background: #FFFFFF;
+  border: 2px solid #D8E2DC;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  border-left: 4px solid #2D6A4F;
+}
+
+.kisan-voice-topic-card:hover {
+  border-color: #2D6A4F;
+  background: #E9F5DB;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(27, 67, 50, 0.08);
+}
+
+.kisan-voice-topic-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.kisan-voice-topic-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1B4332;
+  line-height: 1.3;
+}
+
+/* Language Selection Pill Group */
+.kisan-voice-lang-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+}
+
+.kisan-voice-lang-pill {
+  background: #FFFFFF;
+  border: 2px solid #D8E2DC;
+  color: #2D6A4F;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kisan-voice-lang-pill.active,
+.kisan-voice-lang-pill:hover {
+  background: #2D6A4F;
+  color: #FFFFFF;
+  border-color: #2D6A4F;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .kisan-voice-fab {
+    bottom: 18px;
+    right: 18px;
+    padding: 10px 16px 10px 12px;
+  }
+  .kisan-voice-fab-sub {
+    display: none;
+  }
+  .kisan-voice-topics-grid {
+    grid-template-columns: 1fr;
+  }
+  .kisan-voice-modal {
+    max-height: 94vh;
+    border-radius: 24px;
+  }
+}

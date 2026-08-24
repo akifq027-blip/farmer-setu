@@ -1,6 +1,6 @@
 {
   "name": "KisanSetu - Farmer Procurement & Token Queue System",
   "description": "A farmer-friendly digital procurement platform to book crop drop-off slots, track live token queues, check procurement schedules, locate centers, and streamline grain procurement.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

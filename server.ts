@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 
 import { authRouter } from './backend/routes/auth.js';
@@ -10,13 +9,12 @@ import { schedulesRouter } from './backend/routes/schedules.js';
 import { requestsRouter } from './backend/routes/requests.js';
 import { announcementsRouter } from './backend/routes/announcements.js';
 import { adminRouter } from './backend/routes/admin.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { geminiVoiceRouter } from './backend/routes/geminiVoice.js';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const isProduction = process.env.NODE_ENV === 'production';
 
   // Global Middlewares
   app.use(cors());
@@ -38,6 +36,7 @@ async function startServer() {
   app.use('/api/requests', requestsRouter);
   app.use('/api/announcements', announcementsRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/gemini', geminiVoiceRouter);
 
   // Serve static files from /public
   const publicDir = path.join(process.cwd(), 'public');
@@ -58,13 +57,17 @@ async function startServer() {
   app.get('/admin/login', (req, res) => res.sendFile(path.join(publicDir, 'admin', 'login.html')));
   app.get('/admin/index.html', (req, res) => res.sendFile(path.join(publicDir, 'admin', 'index.html')));
 
-  // In development, handle any unhandled client requests
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
+  // In development, handle any unhandled client requests via Vite middleware
+  if (!isProduction) {
+    try {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    } catch (e) {
+      console.warn('Vite dev middleware fallback:', e);
+    }
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
@@ -83,4 +86,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('Fatal startup error:', err);
+  process.exit(1);
+});

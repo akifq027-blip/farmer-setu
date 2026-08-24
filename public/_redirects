@@ -1,0 +1,7 @@
+# Netlify Redirects for KisanSetu
+
+# If deployed alongside a Render backend or API endpoint, users can proxy /api/* to their Render URL
+# e.g.: /api/*  https://farmer-setu-8.onrender.com/api/:splat  200
+
+# Default SPA fallback or direct static file serving
+/*    /index.html   200

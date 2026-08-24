@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/responsive.css">
+  <link rel="stylesheet" href="/css/voice-assistant.css">
 </head>
 <body>
 
@@ -72,6 +73,9 @@
           </div>
 
           <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button onclick="window.KisanVoiceAssistant && window.KisanVoiceAssistant.open()" class="btn btn-lg" style="background:#FF9F1C; color:#1B4332; font-weight:800; border:2px solid #FFFFFF; box-shadow:0 4px 14px rgba(255,159,28,0.4); display:inline-flex; align-items:center; gap:8px;">
+              🎙️ <span>बोलकर स्टेटस जानें (Voice AI)</span>
+            </button>
             <a href="/request.html" class="btn btn-accent btn-lg" style="box-shadow:0 4px 14px rgba(0,0,0,0.2);">
               ➕ <span data-i18n="dash_btn_new_request">Book Drop-off Slot</span>
             </a>
@@ -221,5 +225,6 @@
   <script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/dashboard.js"></script>
+  <script src="/js/voice-assistant.js"></script>
 </body>
 </html>
