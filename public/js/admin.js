@@ -56,6 +56,26 @@ async function loadAdminStats() {
     document.getElementById('kpi-processing').textContent = s.processingCount;
     document.getElementById('kpi-completed').textContent = s.completedCount;
     document.getElementById('kpi-total-quintals').textContent = `${s.totalQuintalsProcured} Qtl`;
+
+    // Database status check
+    try {
+      const dbRes = await fetch('/api/database/status').then(r => r.json());
+      const dot = document.getElementById('db-dot');
+      const label = document.getElementById('db-label');
+      if (dot && label) {
+        if (dbRes.connected) {
+          dot.style.background = '#22c55e';
+          dot.style.boxShadow = '0 0 6px #22c55e';
+          label.textContent = 'MySQL (Aiven) Online';
+          label.style.color = '#4ade80';
+        } else {
+          dot.style.background = '#f59e0b';
+          dot.style.boxShadow = 'none';
+          label.textContent = 'MySQL (Aiven) Standby';
+          label.style.color = '#cbd5e1';
+        }
+      }
+    } catch (_) {}
   } catch (err) {
     console.error('Error loading admin stats:', err);
   }

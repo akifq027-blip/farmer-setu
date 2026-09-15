@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
@@ -10,6 +11,7 @@ import { requestsRouter } from './backend/routes/requests.js';
 import { announcementsRouter } from './backend/routes/announcements.js';
 import { adminRouter } from './backend/routes/admin.js';
 import { geminiVoiceRouter } from './backend/routes/geminiVoice.js';
+import { store } from './backend/store.js';
 
 async function startServer() {
   const app = express();
@@ -26,8 +28,30 @@ async function startServer() {
     res.json({
       status: 'ok',
       service: 'KisanSetu Farmer Procurement API',
+      database: store.getDatabaseStatus(),
       timestamp: new Date().toISOString()
     });
+  });
+
+  // Database status & management endpoint
+  app.get('/api/database/status', (req, res) => {
+    res.json({
+      success: true,
+      ...store.getDatabaseStatus()
+    });
+  });
+
+  app.post('/api/database/sync', async (req, res) => {
+    try {
+      await store.initMySQLSync();
+      res.json({
+        success: true,
+        message: 'Aiven MySQL synchronization refreshed successfully.',
+        status: store.getDatabaseStatus()
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
   });
 
   app.use('/api/auth', authRouter);

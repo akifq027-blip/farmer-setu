@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { createClient } from '@supabase/supabase-js';
+import { mysqlDb } from './db/mysql.js';
 
 // Types
 export interface Farmer {
@@ -475,12 +475,13 @@ const getInitialData = (): StoreData => {
 
 class Store {
   private data: StoreData;
-  private supabaseClient: ReturnType<typeof createClient> | null = null;
+  private mysqlDb = mysqlDb;
+  private isMySQLLoaded: boolean = false;
 
   constructor() {
     this.data = getInitialData();
     this.initFileStore();
-    this.initSupabase();
+    this.initMySQLSync();
   }
 
   private initFileStore() {
@@ -517,21 +518,199 @@ class Store {
     return this.data;
   }
 
-  private initSupabase() {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-    if (supabaseUrl && supabaseKey) {
-      try {
-        this.supabaseClient = createClient(supabaseUrl, supabaseKey);
-        console.log('Supabase client initialized successfully.');
-      } catch (err) {
-        console.warn('Could not initialize Supabase client:', err);
+  /**
+   * Sync and load from Aiven MySQL database if connected
+   */
+  public async initMySQLSync() {
+    try {
+      const isConnected = await this.mysqlDb.init();
+      if (!isConnected) {
+        console.log('[Store] Operating with local JSON/Memory store.');
+        return;
       }
+
+      console.log('[Store] MySQL connected. Synchronizing records with Aiven MySQL...');
+      const pool = this.mysqlDb.getPool();
+      if (!pool) return;
+
+      // Check if procurement centers exist in MySQL
+      const [centerRows]: any = await pool.query('SELECT COUNT(*) as count FROM procurement_centers');
+      const count = centerRows[0]?.count || 0;
+
+      if (count === 0) {
+        // MySQL is empty, seed initial data from current store into MySQL
+        console.log('[Store] Populating initial dataset into Aiven MySQL...');
+        await this.syncAllToMySQL();
+      } else {
+        // MySQL has data, load latest data from MySQL into active memory
+        await this.loadFromMySQL();
+      }
+
+      this.isMySQLLoaded = true;
+      console.log('[Store] ✅ Aiven MySQL synchronization active and operational.');
+    } catch (err: any) {
+      console.warn('[Store] MySQL sync warning:', err.message);
     }
   }
 
-  public getSupabase() {
-    return this.supabaseClient;
+  /**
+   * Load authoritative data from MySQL into local memory
+   */
+  public async loadFromMySQL() {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+
+    try {
+      // 1. Centers
+      const [centers]: any = await pool.query('SELECT * FROM procurement_centers ORDER BY created_at DESC');
+      if (centers && centers.length > 0) {
+        this.data.procurement_centers = centers.map((c: any) => ({
+          ...c,
+          crops_accepted: typeof c.crops_accepted === 'string' ? JSON.parse(c.crops_accepted) : (c.crops_accepted || [])
+        }));
+      }
+
+      // 2. Farmers
+      const [farmers]: any = await pool.query('SELECT * FROM farmers ORDER BY created_at DESC');
+      if (farmers && farmers.length > 0) {
+        this.data.farmers = farmers;
+      }
+
+      // 3. Schedules
+      const [schedules]: any = await pool.query('SELECT * FROM procurement_schedules ORDER BY procurement_date ASC');
+      if (schedules && schedules.length > 0) {
+        this.data.procurement_schedules = schedules.map((s: any) => ({
+          ...s,
+          procurement_date: s.procurement_date instanceof Date ? s.procurement_date.toISOString().split('T')[0] : String(s.procurement_date)
+        }));
+      }
+
+      // 4. Requests
+      const [requests]: any = await pool.query('SELECT * FROM procurement_requests ORDER BY submitted_at DESC');
+      if (requests && requests.length > 0) {
+        this.data.procurement_requests = requests.map((r: any) => {
+          const center = this.data.procurement_centers.find(c => c.id === r.center_id);
+          const farmer = this.data.farmers.find(f => f.id === r.farmer_id);
+          return {
+            ...r,
+            farmer_name: farmer?.full_name || r.farmer_name,
+            farmer_mobile: farmer?.mobile_number || r.farmer_mobile,
+            farmer_village: farmer?.village || r.farmer_village,
+            center_name: center?.center_name || r.center_name,
+            quantity_quintals: parseFloat(r.quantity_quintals),
+            preferred_date: r.preferred_date instanceof Date ? r.preferred_date.toISOString().split('T')[0] : String(r.preferred_date)
+          };
+        });
+      }
+
+      // 5. Announcements
+      const [announcements]: any = await pool.query('SELECT * FROM announcements ORDER BY announcement_date DESC');
+      if (announcements && announcements.length > 0) {
+        this.data.announcements = announcements.map((a: any) => ({
+          ...a,
+          announcement_date: a.announcement_date instanceof Date ? a.announcement_date.toISOString().split('T')[0] : String(a.announcement_date)
+        }));
+      }
+
+      // 6. Admin Users
+      const [admins]: any = await pool.query('SELECT * FROM admin_users ORDER BY created_at DESC');
+      if (admins && admins.length > 0) {
+        this.data.admin_users = admins;
+      }
+
+      // Save synced state to local fallback file
+      this.saveToFile();
+    } catch (err: any) {
+      console.error('[Store] Failed to load data from MySQL:', err.message);
+    }
+  }
+
+  /**
+   * Seed all in-memory items to MySQL
+   */
+  public async syncAllToMySQL() {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+
+    try {
+      // Centers
+      for (const c of this.data.procurement_centers) {
+        await pool.query(
+          `INSERT IGNORE INTO procurement_centers (id, center_name, location, district, state, contact_number, in_charge_name, crops_accepted, opening_time, closing_time, daily_capacity_quintals, google_maps_url, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [c.id, c.center_name, c.location, c.district, c.state, c.contact_number, c.in_charge_name, JSON.stringify(c.crops_accepted), c.opening_time, c.closing_time, c.daily_capacity_quintals, c.google_maps_url, c.status]
+        );
+      }
+
+      // Farmers
+      for (const f of this.data.farmers) {
+        await pool.query(
+          `INSERT IGNORE INTO farmers (id, full_name, mobile_number, email, password_hash, village, district, state, land_record_id, preferred_language)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [f.id, f.full_name, f.mobile_number, f.email || null, f.password_hash, f.village, f.district, f.state, f.land_record_id || null, f.preferred_language]
+        );
+      }
+
+      // Admins
+      for (const a of this.data.admin_users) {
+        await pool.query(
+          `INSERT IGNORE INTO admin_users (id, full_name, email, password_hash, role, assigned_center_id)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [a.id, a.full_name, a.email, a.password_hash, a.role, a.assigned_center_id || null]
+        );
+      }
+
+      // Schedules
+      for (const s of this.data.procurement_schedules) {
+        await pool.query(
+          `INSERT IGNORE INTO procurement_schedules (id, center_id, crop_name, procurement_date, start_time, end_time, available_slots, remaining_slots, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [s.id, s.center_id, s.crop_name, s.procurement_date, s.start_time, s.end_time, s.available_slots, s.remaining_slots, s.status]
+        );
+      }
+
+      // Requests
+      for (const r of this.data.procurement_requests) {
+        await pool.query(
+          `INSERT IGNORE INTO procurement_requests (id, farmer_id, center_id, crop_name, quantity_quintals, preferred_date, transport_mode, vehicle_number, token_number, status, queue_position, estimated_waiting_minutes, admin_notes, payment_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [r.id, r.farmer_id, r.center_id, r.crop_name, r.quantity_quintals, r.preferred_date, r.transport_mode, r.vehicle_number || '', r.token_number, r.status, r.queue_position, r.estimated_waiting_minutes, r.admin_notes || '', r.payment_status]
+        );
+      }
+
+      // Announcements
+      for (const a of this.data.announcements) {
+        await pool.query(
+          `INSERT IGNORE INTO announcements (id, title, message, priority, announcement_date, center_id)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [a.id, a.title, a.message, a.priority, a.announcement_date, a.center_id || null]
+        );
+      }
+    } catch (err: any) {
+      console.warn('[Store] syncAllToMySQL error:', err.message);
+    }
+  }
+
+  public getDatabaseStatus() {
+    const status = this.mysqlDb.getStatus();
+    return {
+      databaseType: 'MySQL (Aiven)',
+      connected: status.connected,
+      error: status.error,
+      isMySQLLoaded: this.isMySQLLoaded,
+      recordCounts: {
+        farmers: this.data.farmers.length,
+        centers: this.data.procurement_centers.length,
+        schedules: this.data.procurement_schedules.length,
+        requests: this.data.procurement_requests.length,
+        announcements: this.data.announcements.length,
+        admins: this.data.admin_users.length
+      }
+    };
+  }
+
+  public getMySQL() {
+    return this.mysqlDb;
   }
 
   // Getters
@@ -572,6 +751,7 @@ class Store {
   public addFarmer(farmer: Farmer) {
     this.data.farmers.unshift(farmer);
     this.saveToFile();
+    this.persistFarmerToMySQL(farmer);
     return farmer;
   }
 
@@ -580,6 +760,7 @@ class Store {
     if (idx !== -1) {
       this.data.farmers[idx] = { ...this.data.farmers[idx], ...updates, updated_at: new Date().toISOString() };
       this.saveToFile();
+      this.persistFarmerUpdateToMySQL(id, updates);
       return this.data.farmers[idx];
     }
     return null;
@@ -614,6 +795,7 @@ class Store {
         };
         this.data.admin_users.unshift(targetAdmin);
         this.saveToFile();
+        this.persistAdminToMySQL(targetAdmin);
       }
       return targetAdmin;
     }
@@ -629,6 +811,7 @@ class Store {
   public addCenter(center: ProcurementCenter) {
     this.data.procurement_centers.unshift(center);
     this.saveToFile();
+    this.persistCenterToMySQL(center);
     return center;
   }
 
@@ -637,6 +820,7 @@ class Store {
     if (idx !== -1) {
       this.data.procurement_centers[idx] = { ...this.data.procurement_centers[idx], ...updates };
       this.saveToFile();
+      this.persistCenterUpdateToMySQL(id, updates);
       return this.data.procurement_centers[idx];
     }
     return null;
@@ -647,6 +831,7 @@ class Store {
     if (idx !== -1) {
       const removed = this.data.procurement_centers.splice(idx, 1)[0];
       this.saveToFile();
+      this.deleteCenterFromMySQL(id);
       return removed;
     }
     return null;
@@ -660,6 +845,7 @@ class Store {
   public addSchedule(schedule: ProcurementSchedule) {
     this.data.procurement_schedules.unshift(schedule);
     this.saveToFile();
+    this.persistScheduleToMySQL(schedule);
     return schedule;
   }
 
@@ -668,6 +854,7 @@ class Store {
     if (idx !== -1) {
       this.data.procurement_schedules[idx] = { ...this.data.procurement_schedules[idx], ...updates };
       this.saveToFile();
+      this.persistScheduleUpdateToMySQL(id, updates);
       return this.data.procurement_schedules[idx];
     }
     return null;
@@ -678,6 +865,7 @@ class Store {
     if (idx !== -1) {
       const removed = this.data.procurement_schedules.splice(idx, 1)[0];
       this.saveToFile();
+      this.deleteScheduleFromMySQL(id);
       return removed;
     }
     return null;
@@ -701,6 +889,7 @@ class Store {
     this.data.procurement_requests.unshift(req);
     this.recalculateQueuePositions(req.center_id);
     this.saveToFile();
+    this.persistRequestToMySQL(req);
     return req;
   }
 
@@ -714,6 +903,7 @@ class Store {
       };
       this.recalculateQueuePositions(this.data.procurement_requests[idx].center_id);
       this.saveToFile();
+      this.persistRequestUpdateToMySQL(id, updates);
       return this.data.procurement_requests[idx];
     }
     return null;
@@ -725,6 +915,7 @@ class Store {
       const removed = this.data.procurement_requests.splice(idx, 1)[0];
       this.recalculateQueuePositions(removed.center_id);
       this.saveToFile();
+      this.deleteRequestFromMySQL(id);
       return removed;
     }
     return null;
@@ -743,6 +934,10 @@ class Store {
     activeInQueue.forEach((req, index) => {
       req.queue_position = index; // 0 means currently processing or next up
       req.estimated_waiting_minutes = index * 15; // ~15 minutes per farmer weighment
+      this.persistRequestUpdateToMySQL(req.id, {
+        queue_position: req.queue_position,
+        estimated_waiting_minutes: req.estimated_waiting_minutes
+      });
     });
   }
 
@@ -750,6 +945,7 @@ class Store {
   public addAnnouncement(announcement: Announcement) {
     this.data.announcements.unshift(announcement);
     this.saveToFile();
+    this.persistAnnouncementToMySQL(announcement);
     return announcement;
   }
 
@@ -758,9 +954,223 @@ class Store {
     if (idx !== -1) {
       const removed = this.data.announcements.splice(idx, 1)[0];
       this.saveToFile();
+      this.deleteAnnouncementFromMySQL(id);
       return removed;
     }
     return null;
+  }
+
+  // ==========================================
+  // Background MySQL Persistence Helpers
+  // ==========================================
+  private async persistFarmerToMySQL(farmer: Farmer) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query(
+        `INSERT INTO farmers (id, full_name, mobile_number, email, password_hash, village, district, state, land_record_id, preferred_language)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), village = VALUES(village), updated_at = NOW()`,
+        [farmer.id, farmer.full_name, farmer.mobile_number, farmer.email || null, farmer.password_hash, farmer.village, farmer.district, farmer.state, farmer.land_record_id || null, farmer.preferred_language]
+      );
+    } catch (e: any) {
+      console.warn('[MySQL] Error persisting farmer:', e.message);
+    }
+  }
+
+  private async persistFarmerUpdateToMySQL(id: string, updates: Partial<Farmer>) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      const sets: string[] = [];
+      const values: any[] = [];
+      for (const [key, val] of Object.entries(updates)) {
+        if (key === 'id') continue;
+        sets.push(`${key} = ?`);
+        values.push(val);
+      }
+      if (sets.length > 0) {
+        values.push(id);
+        await pool.query(`UPDATE farmers SET ${sets.join(', ')}, updated_at = NOW() WHERE id = ?`, values);
+      }
+    } catch (e: any) {
+      console.warn('[MySQL] Error updating farmer:', e.message);
+    }
+  }
+
+  private async persistCenterToMySQL(c: ProcurementCenter) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query(
+        `INSERT INTO procurement_centers (id, center_name, location, district, state, contact_number, in_charge_name, crops_accepted, opening_time, closing_time, daily_capacity_quintals, google_maps_url, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE center_name = VALUES(center_name), contact_number = VALUES(contact_number), status = VALUES(status)`,
+        [c.id, c.center_name, c.location, c.district, c.state, c.contact_number, c.in_charge_name, JSON.stringify(c.crops_accepted), c.opening_time, c.closing_time, c.daily_capacity_quintals, c.google_maps_url, c.status]
+      );
+    } catch (e: any) {
+      console.warn('[MySQL] Error persisting center:', e.message);
+    }
+  }
+
+  private async persistCenterUpdateToMySQL(id: string, updates: Partial<ProcurementCenter>) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      const sets: string[] = [];
+      const values: any[] = [];
+      for (const [key, val] of Object.entries(updates)) {
+        if (key === 'id') continue;
+        sets.push(`${key} = ?`);
+        values.push(key === 'crops_accepted' && Array.isArray(val) ? JSON.stringify(val) : val);
+      }
+      if (sets.length > 0) {
+        values.push(id);
+        await pool.query(`UPDATE procurement_centers SET ${sets.join(', ')} WHERE id = ?`, values);
+      }
+    } catch (e: any) {
+      console.warn('[MySQL] Error updating center:', e.message);
+    }
+  }
+
+  private async deleteCenterFromMySQL(id: string) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query('DELETE FROM procurement_centers WHERE id = ?', [id]);
+    } catch (e: any) {
+      console.warn('[MySQL] Error deleting center:', e.message);
+    }
+  }
+
+  private async persistScheduleToMySQL(s: ProcurementSchedule) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query(
+        `INSERT INTO procurement_schedules (id, center_id, crop_name, procurement_date, start_time, end_time, available_slots, remaining_slots, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE remaining_slots = VALUES(remaining_slots), status = VALUES(status)`,
+        [s.id, s.center_id, s.crop_name, s.procurement_date, s.start_time, s.end_time, s.available_slots, s.remaining_slots, s.status]
+      );
+    } catch (e: any) {
+      console.warn('[MySQL] Error persisting schedule:', e.message);
+    }
+  }
+
+  private async persistScheduleUpdateToMySQL(id: string, updates: Partial<ProcurementSchedule>) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      const sets: string[] = [];
+      const values: any[] = [];
+      for (const [key, val] of Object.entries(updates)) {
+        if (key === 'id') continue;
+        sets.push(`${key} = ?`);
+        values.push(val);
+      }
+      if (sets.length > 0) {
+        values.push(id);
+        await pool.query(`UPDATE procurement_schedules SET ${sets.join(', ')} WHERE id = ?`, values);
+      }
+    } catch (e: any) {
+      console.warn('[MySQL] Error updating schedule:', e.message);
+    }
+  }
+
+  private async deleteScheduleFromMySQL(id: string) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query('DELETE FROM procurement_schedules WHERE id = ?', [id]);
+    } catch (e: any) {
+      console.warn('[MySQL] Error deleting schedule:', e.message);
+    }
+  }
+
+  private async persistRequestToMySQL(r: ProcurementRequest) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query(
+        `INSERT INTO procurement_requests (id, farmer_id, center_id, crop_name, quantity_quintals, preferred_date, transport_mode, vehicle_number, token_number, status, queue_position, estimated_waiting_minutes, admin_notes, payment_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE status = VALUES(status), queue_position = VALUES(queue_position), estimated_waiting_minutes = VALUES(estimated_waiting_minutes), updated_at = NOW()`,
+        [r.id, r.farmer_id, r.center_id, r.crop_name, r.quantity_quintals, r.preferred_date, r.transport_mode, r.vehicle_number || '', r.token_number, r.status, r.queue_position, r.estimated_waiting_minutes, r.admin_notes || '', r.payment_status]
+      );
+    } catch (e: any) {
+      console.warn('[MySQL] Error persisting request:', e.message);
+    }
+  }
+
+  private async persistRequestUpdateToMySQL(id: string, updates: Partial<ProcurementRequest>) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      const sets: string[] = [];
+      const values: any[] = [];
+      for (const [key, val] of Object.entries(updates)) {
+        if (key === 'id' || key === 'farmer_name' || key === 'center_name' || key === 'farmer_mobile' || key === 'farmer_village') continue;
+        sets.push(`${key} = ?`);
+        values.push(val);
+      }
+      if (sets.length > 0) {
+        values.push(id);
+        await pool.query(`UPDATE procurement_requests SET ${sets.join(', ')}, updated_at = NOW() WHERE id = ?`, values);
+      }
+    } catch (e: any) {
+      console.warn('[MySQL] Error updating request:', e.message);
+    }
+  }
+
+  private async deleteRequestFromMySQL(id: string) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query('DELETE FROM procurement_requests WHERE id = ?', [id]);
+    } catch (e: any) {
+      console.warn('[MySQL] Error deleting request:', e.message);
+    }
+  }
+
+  private async persistAnnouncementToMySQL(a: Announcement) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query(
+        `INSERT INTO announcements (id, title, message, priority, announcement_date, center_id)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE title = VALUES(title), message = VALUES(message)`,
+        [a.id, a.title, a.message, a.priority, a.announcement_date, a.center_id || null]
+      );
+    } catch (e: any) {
+      console.warn('[MySQL] Error persisting announcement:', e.message);
+    }
+  }
+
+  private async deleteAnnouncementFromMySQL(id: string) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query('DELETE FROM announcements WHERE id = ?', [id]);
+    } catch (e: any) {
+      console.warn('[MySQL] Error deleting announcement:', e.message);
+    }
+  }
+
+  private async persistAdminToMySQL(admin: AdminUser) {
+    const pool = this.mysqlDb.getPool();
+    if (!pool) return;
+    try {
+      await pool.query(
+        `INSERT INTO admin_users (id, full_name, email, password_hash, role, assigned_center_id)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), role = VALUES(role)`,
+        [admin.id, admin.full_name, admin.email, admin.password_hash, admin.role, admin.assigned_center_id || null]
+      );
+    } catch (e: any) {
+      console.warn('[MySQL] Error persisting admin user:', e.message);
+    }
   }
 }
 

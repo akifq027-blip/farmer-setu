@@ -5,20 +5,24 @@ import { store } from '../store.js';
 export const geminiVoiceRouter = Router();
 
 // Official MSP Benchmark Rates for Agricultural Procurement (₹ / Quintal)
-const MSP_RATES: Record<string, { msp: number; season: string; quality_standard: string }> = {
-  'Wheat': { msp: 2275, season: 'Rabi', quality_standard: 'FAQ (Moisture below 12%)' },
-  'Paddy (Common)': { msp: 2300, season: 'Kharif', quality_standard: 'FAQ (Moisture below 17%)' },
-  'Paddy (Grade A)': { msp: 2320, season: 'Kharif', quality_standard: 'FAQ (Moisture below 17%)' },
-  'Paddy': { msp: 2300, season: 'Kharif', quality_standard: 'FAQ (Moisture below 17%)' },
-  'Mustard': { msp: 5650, season: 'Rabi', quality_standard: 'FAQ (Moisture below 8%)' },
-  'Cotton': { msp: 7121, season: 'Kharif', quality_standard: 'Medium/Long Staple' },
-  'Gram / Chana': { msp: 5440, season: 'Rabi', quality_standard: 'FAQ (Moisture below 10%)' },
-  'Chana': { msp: 5440, season: 'Rabi', quality_standard: 'FAQ (Moisture below 10%)' },
-  'Soyabean': { msp: 4892, season: 'Kharif', quality_standard: 'FAQ (Moisture below 12%)' },
-  'Maize': { msp: 2090, season: 'Kharif', quality_standard: 'FAQ (Moisture below 14%)' },
-  'Moong': { msp: 8558, season: 'Kharif', quality_standard: 'FAQ' },
-  'Groundnut': { msp: 6377, season: 'Kharif', quality_standard: 'FAQ' },
-  'Sunflower': { msp: 6760, season: 'Kharif', quality_standard: 'FAQ' }
+const MSP_RATES: Record<string, { msp: number; season: string; quality_standard: string; moisture_limit: string }> = {
+  'Wheat': { msp: 2275, season: 'Rabi', quality_standard: 'FAQ (Fair Average Quality)', moisture_limit: 'Below 12%' },
+  'Paddy (Common)': { msp: 2300, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 17%' },
+  'Paddy (Grade A)': { msp: 2320, season: 'Kharif', quality_standard: 'FAQ Grade A', moisture_limit: 'Below 17%' },
+  'Paddy': { msp: 2300, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 17%' },
+  'Mustard / Sarson': { msp: 5650, season: 'Rabi', quality_standard: 'FAQ', moisture_limit: 'Below 8%' },
+  'Mustard': { msp: 5650, season: 'Rabi', quality_standard: 'FAQ', moisture_limit: 'Below 8%' },
+  'Cotton / Kapas': { msp: 7121, season: 'Kharif', quality_standard: 'Medium/Long Staple', moisture_limit: 'Below 8-12%' },
+  'Cotton': { msp: 7121, season: 'Kharif', quality_standard: 'Medium/Long Staple', moisture_limit: 'Below 8-12%' },
+  'Gram / Chana': { msp: 5440, season: 'Rabi', quality_standard: 'FAQ', moisture_limit: 'Below 10%' },
+  'Chana': { msp: 5440, season: 'Rabi', quality_standard: 'FAQ', moisture_limit: 'Below 10%' },
+  'Soyabean': { msp: 4892, season: 'Kharif', quality_standard: 'FAQ (Yellow)', moisture_limit: 'Below 12%' },
+  'Maize / Makka': { msp: 2090, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 14%' },
+  'Maize': { msp: 2090, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 14%' },
+  'Moong': { msp: 8558, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 12%' },
+  'Groundnut / Mungfali': { msp: 6377, season: 'Kharif', quality_standard: 'FAQ in Pods', moisture_limit: 'Below 8%' },
+  'Groundnut': { msp: 6377, season: 'Kharif', quality_standard: 'FAQ in Pods', moisture_limit: 'Below 8%' },
+  'Sunflower': { msp: 6760, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 9%' }
 };
 
 let genAIClient: GoogleGenAI | null = null;
@@ -39,10 +43,60 @@ function getGeminiClient(): GoogleGenAI | null {
   return genAIClient;
 }
 
-// POST /api/gemini/voice-assistant
+// GET /api/gemini/models - List supported AI models
+geminiVoiceRouter.get('/models', (req, res) => {
+  const hasGemini = Boolean(process.env.GEMINI_API_KEY);
+  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
+
+  res.json({
+    success: true,
+    models: [
+      {
+        id: 'gemini-3.7-flash',
+        name: 'Google Gemini 3.7 Flash',
+        engine: 'gemini',
+        provider: 'Google AI',
+        badge: 'Fast & Multilingual',
+        description: 'Advanced reasoning, real-time Indian languages & agricultural intelligence.',
+        isAvailable: hasGemini || true,
+        isDefault: true
+      },
+      {
+        id: 'chatgpt-4o',
+        name: 'ChatGPT (GPT-4o Mini)',
+        engine: 'chatgpt',
+        provider: 'OpenAI',
+        badge: 'Conversational',
+        description: 'OpenAI ChatGPT conversational voice and structured guidance.',
+        isAvailable: hasOpenAI || true,
+        isDefault: false
+      },
+      {
+        id: 'kisan-auto',
+        name: 'KisanSetu Auto-AI',
+        engine: 'auto',
+        provider: 'KisanSetu AI Hub',
+        badge: 'Grounded + Live DB',
+        description: 'Auto-selects the fastest AI engine combined with live mandi queue data.',
+        isAvailable: true,
+        isDefault: false
+      }
+    ],
+    activeDefault: 'gemini-3.7-flash'
+  });
+});
+
+// POST /api/gemini/voice-assistant - Multi-model conversational AI endpoint
 geminiVoiceRouter.post('/voice-assistant', async (req, res) => {
   try {
-    const { query, language = 'auto', farmerId, tokenNumber } = req.body;
+    const { 
+      query, 
+      language = 'auto', 
+      farmerId, 
+      tokenNumber, 
+      selectedModel = 'gemini-3.7-flash',
+      history = []
+    } = req.body;
 
     if (!query || typeof query !== 'string' || !query.trim()) {
       return res.status(400).json({
@@ -72,28 +126,36 @@ geminiVoiceRouter.post('/voice-assistant', async (req, res) => {
       );
     }
 
-    // Prepare context payload for Gemini
+    // Prepare ground truth context payload
     const liveContext = {
-      centers: allCenters.map(c => ({
+      currentTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      procurementCenters: allCenters.map(c => ({
+        id: c.id,
         name: c.center_name,
         district: c.district,
-        crops: c.crops_accepted,
+        state: c.state,
+        crops_accepted: c.crops_accepted,
         timings: `${c.opening_time} to ${c.closing_time}`,
         status: c.status,
-        contact: c.contact_number
+        contact: c.contact_number,
+        address: c.location,
+        daily_capacity: c.daily_capacity_quintals
       })),
       schedules: allSchedules.slice(0, 10).map(s => ({
         crop: s.crop_name,
+        center_id: s.center_id,
         date: s.procurement_date,
         time: `${s.start_time} - ${s.end_time}`,
         remaining_slots: s.remaining_slots,
+        available_slots: s.available_slots,
         status: s.status
       })),
-      announcements: allAnnouncements.slice(0, 3).map(a => a.title + ': ' + a.message),
-      msp_rates: MSP_RATES,
-      matched_token: matchedTokenInfo ? {
+      recentAnnouncements: allAnnouncements.slice(0, 3).map(a => `${a.title}: ${a.message}`),
+      governmentMspRates: MSP_RATES,
+      matchedTokenData: matchedTokenInfo ? {
         token: matchedTokenInfo.token_number,
         farmer_name: matchedTokenInfo.farmer_name,
+        farmer_phone: matchedTokenInfo.farmer_phone,
         crop: matchedTokenInfo.crop_name,
         quantity: `${matchedTokenInfo.quantity_quintals} Quintals`,
         status: matchedTokenInfo.status,
@@ -101,110 +163,217 @@ geminiVoiceRouter.post('/voice-assistant', async (req, res) => {
         queue_position: matchedTokenInfo.queue_position,
         estimated_waiting_minutes: matchedTokenInfo.estimated_waiting_minutes,
         payment_status: matchedTokenInfo.payment_status,
-        date: matchedTokenInfo.preferred_date
+        date: matchedTokenInfo.preferred_date,
+        vehicle_number: matchedTokenInfo.vehicle_number
       } : null,
-      documents_required: [
-        'Aadhaar Card (Original for biometric check)',
-        'Pattadar Passbook / Land Record (Khasra/Adangal)',
-        'Bank Passbook Copy (Aadhaar-linked for Direct DBT payment)',
-        'Crop Sowing Certificate'
+      documentsRequired: [
+        'Original Aadhaar Card (for biometric verification at the gate)',
+        'Pattadar Passbook / Land Record (Khasra / Khatauni / Adangal copy)',
+        'Bank Account Passbook (Aadhaar-seeded for direct DBT payment)',
+        'Crop Sowing Certificate / Girdawari receipt'
       ]
     };
 
-    const ai = getGeminiClient();
+    // System prompt for Indian Agricultural Voice Assistant
+    const systemInstruction = `
+You are "Kisan Mitra" (किसान मित्र / రైతు మిత్ర), an expert, ultra-friendly, respectful Agricultural AI Voice & Knowledge Assistant for KisanSetu.
+Your audience includes Indian farmers, many of whom prefer listening to spoken audio over reading text.
 
-    if (ai) {
-      const systemInstruction = `
-You are "Kisan Mitra" (किसान मित्र / రైతు మిత్ర), an ultra-friendly, respectful, and crystal-clear Agricultural Voice Assistant for KisanSetu.
-Your PRIMARY audience is hardworking Indian farmers, many of whom CANNOT READ OR WRITE ANY TEXT.
-They rely 100% on listening to your spoken words.
-
-CORE RULES FOR GENERATING SPOKEN RESPONSES:
-1. Speak in the EXACT SAME LANGUAGE and dialect as the farmer's query (e.g., Hindi, Telugu, Punjabi, Marathi, Tamil, Kannada, Bengali, Gujarati, or English).
-2. Keep sentences SHORT, WARM, REASSURING, and VERY SIMPLE.
-3. Pronounce numbers, dates, crop names, and rupee amounts clearly so they sound natural when read aloud by Text-To-Speech (TTS).
-4. For Token/Queue queries:
-   - If token is found, tell them: their token number, crop, current status, exactly how many farmers are ahead, approximate wait time in minutes, and what counter to approach.
-   - If no token number was mentioned and they ask for their status, gently ask them to speak their token number (e.g. "A-104").
-5. For MSP / Price queries:
-   - Quote the official government MSP rates directly from the live MSP table provided.
-   - Mention the moisture limit (e.g. "Wheat moisture must be below 12%").
-6. For Booking / Center queries:
-   - Explain in 2-3 simple steps how to book a slot, what center to go to, and opening timings.
-7. For Documents:
-   - Tell them the 3 essential documents: Aadhaar card, Land passbook, and Bank passbook.
-8. NEVER output markdown symbols like Asterisks (**), Hashtags (###), or complex code blocks in your spoken answer, because these sound weird when spoken aloud by a speech synthesizer. Use plain, clean conversational text with natural pauses (commas and periods).
+CORE OPERATIONAL RULES:
+1. LANGUAGE: Respond in the EXACT SAME LANGUAGE and dialect of the query (e.g. Hindi, Telugu, English, Punjabi, Marathi, Tamil, Kannada, Bengali, Gujarati). If language preference is explicitly specified as '${language}', prioritize that language.
+2. SPOKEN AUDIO COMPATIBILITY: Keep your spoken answer natural, warm, reassuring, and easy to pronounce by a speech synthesizer (TTS). Avoid robotic acronyms.
+3. LIVE MANDI DATA ACCURACY: Always quote real numbers from the LIVE SYSTEM CONTEXT provided:
+   - For Tokens/Queue: Quote the token number, crop, status, farmers ahead in queue, approximate wait time, and counter advice.
+   - For MSP: Quote the official Minimum Support Price (MSP) in ₹ per quintal and mention the moisture limit (e.g., Wheat moisture < 12%, Paddy < 17%).
+   - For Slot Booking: Explain in 3 simple steps how to pick crop, date, vehicle number, and get instant digital token.
+   - For Centers: State opening hours (typically 8:00 AM - 6:00 PM) and center contact number.
+   - For Documents: Mention the 3 essential papers (Aadhaar, Land Passbook, Bank Passbook for DBT).
+4. CROP DOCTOR & ADVISORY: If asked about farming advice (e.g. drying grain, pest prevention, storage, rain precautions), provide safe, practical farmer-first advice.
+5. CLEAN TEXT: In the plain spoken response, do NOT use Markdown formatting like asterisks (**), hashtags (###), or code fences, because TTS synthesizers read those aloud awkwardly. Keep punctuation natural with commas and periods for speech pauses.
 `;
 
-      const prompt = `
-FARMER'S SPOKEN QUESTION: "${cleanQuery}"
-REQUESTED LANGUAGE PREFERENCE: ${language}
-
-LIVE SYSTEM & MANDI CONTEXT:
-${JSON.stringify(liveContext, null, 2)}
-
-Provide a natural, helpful, spoken answer for the farmer.
-Also determine:
-1. actionType: one of ["TOKEN_STATUS", "MSP_RATES", "BOOK_SLOT", "CENTER_INFO", "DOCUMENT_INFO", "WEATHER_ADVICE", "GENERAL_HELP"]
-2. detectedToken: string or null
-3. quickFollowUps: array of 2-3 short spoken prompts the farmer can ask next
-`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.7-flash',
-        contents: prompt,
-        config: {
-          systemInstruction: systemInstruction,
-          temperature: 0.3
-        }
-      });
-
-      const spokenResponse = response.text || 'नमस्ते किसान भाई, आपकी सहायता के लिए किसान सेतु तैयार है।';
-
-      // Detect speech synthesis language code
-      let speechLang = 'hi-IN';
-      const lowerQuery = cleanQuery.toLowerCase();
-      if (language === 'te' || /[\u0C00-\u0C7F]/.test(cleanQuery) || lowerQuery.includes('telugu') || lowerQuery.includes('eppudu') || lowerQuery.includes('enta')) {
-        speechLang = 'te-IN';
-      } else if (language === 'hi' || /[\u0900-\u097F]/.test(cleanQuery) || lowerQuery.includes('namaste') || lowerQuery.includes('kisan') || lowerQuery.includes('bhav') || lowerQuery.includes('gehu')) {
-        speechLang = 'hi-IN';
-      } else if (language === 'pa' || /[\u0A00-\u0A7F]/.test(cleanQuery) || lowerQuery.includes('sat sri akaal') || lowerQuery.includes('kanak')) {
-        speechLang = 'pa-IN';
-      } else if (language === 'mr' || lowerQuery.includes('namaskar') || lowerQuery.includes('bhav kay')) {
-        speechLang = 'mr-IN';
-      } else if (language === 'ta' || /[\u0B80-\u0BFF]/.test(cleanQuery)) {
-        speechLang = 'ta-IN';
-      } else if (language === 'en' || /^[a-zA-Z0-9\s.,?!'-]+$/.test(cleanQuery)) {
-        // If query is pure English
-        speechLang = 'en-IN';
-      }
-
-      return res.json({
-        success: true,
-        spokenResponse: spokenResponse.trim(),
-        speechLang: speechLang,
-        matchedToken: matchedTokenInfo,
-        actionUrl: matchedTokenInfo ? `/status.html?token=${matchedTokenInfo.token_number}` : null,
-        mspData: MSP_RATES
-      });
+    // Detect speech synthesis language code
+    let speechLang = 'hi-IN';
+    const lowerQuery = cleanQuery.toLowerCase();
+    if (language === 'te' || /[\u0C00-\u0C7F]/.test(cleanQuery) || lowerQuery.includes('telugu') || lowerQuery.includes('eppudu') || lowerQuery.includes('ధర') || lowerQuery.includes('టోకెన్')) {
+      speechLang = 'te-IN';
+    } else if (language === 'hi' || /[\u0900-\u097F]/.test(cleanQuery) || lowerQuery.includes('namaste') || lowerQuery.includes('kisan') || lowerQuery.includes('bhav') || lowerQuery.includes('gehu') || lowerQuery.includes('भाव')) {
+      speechLang = 'hi-IN';
+    } else if (language === 'pa' || /[\u0A00-\u0A7F]/.test(cleanQuery) || lowerQuery.includes('sat sri akaal') || lowerQuery.includes('kanak')) {
+      speechLang = 'pa-IN';
+    } else if (language === 'mr' || lowerQuery.includes('namaskar') || lowerQuery.includes('bhav kay') || lowerQuery.includes('शेतकरी')) {
+      speechLang = 'mr-IN';
+    } else if (language === 'ta' || /[\u0B80-\u0BFF]/.test(cleanQuery)) {
+      speechLang = 'ta-IN';
+    } else if (language === 'kn' || /[\u0C80-\u0CFF]/.test(cleanQuery)) {
+      speechLang = 'kn-IN';
+    } else if (language === 'gu' || /[\u0A80-\u0AFF]/.test(cleanQuery)) {
+      speechLang = 'gu-IN';
+    } else if (language === 'bn' || /[\u0980-\u09FF]/.test(cleanQuery)) {
+      speechLang = 'bn-IN';
+    } else if (language === 'en' || /^[a-zA-Z0-9\s.,?!'-]+$/.test(cleanQuery)) {
+      speechLang = 'en-IN';
     }
 
-    // Graceful offline/fallback assistant if Gemini key is not configured
-    const fallbackAnswer = generateIntelligentFallback(cleanQuery, language, matchedTokenInfo, allCenters, allSchedules);
+    // Determine Action Type for UI widgets
+    let actionType = 'GENERAL_HELP';
+    let actionUrl: string | null = null;
+    let actionTitle: string | null = null;
+
+    if (matchedTokenInfo) {
+      actionType = 'TOKEN_STATUS';
+      actionUrl = `/status.html?token=${matchedTokenInfo.token_number}`;
+      actionTitle = `टोकन ${matchedTokenInfo.token_number} लाइव स्थिति`;
+    } else if (lowerQuery.includes('rate') || lowerQuery.includes('bhav') || lowerQuery.includes('msp') || lowerQuery.includes('भाव') || lowerQuery.includes('ధర') || lowerQuery.includes('price')) {
+      actionType = 'MSP_RATES';
+      actionUrl = `/schedule.html`;
+      actionTitle = 'सभी फसलों के सरकारी भाव (MSP)';
+    } else if (lowerQuery.includes('book') || lowerQuery.includes('slot') || lowerQuery.includes('स्लॉट') || lowerQuery.includes('బుక్')) {
+      actionType = 'BOOK_SLOT';
+      actionUrl = `/request.html`;
+      actionTitle = 'फसल बेचने का स्लॉट बुक करें';
+    } else if (lowerQuery.includes('center') || lowerQuery.includes('mandi') || lowerQuery.includes('केंद्र') || lowerQuery.includes('కేంద్రం')) {
+      actionType = 'CENTER_INFO';
+      actionUrl = `/centers.html`;
+      actionTitle = 'नजदीकी सरकारी खरीद केंद्र सूची';
+    } else if (lowerQuery.includes('document') || lowerQuery.includes('kagas') || lowerQuery.includes('कागज') || lowerQuery.includes('पंजीकरण') || lowerQuery.includes('పత్రాలు')) {
+      actionType = 'DOCUMENT_INFO';
+      actionUrl = `/help.html`;
+      actionTitle = 'जरूरी दस्तावेज व सत्यापन सहायता';
+    }
+
+    // Strategy 1: OpenAI ChatGPT (if selected and configured)
+    if (selectedModel.includes('chatgpt') && process.env.OPENAI_API_KEY) {
+      try {
+        const openAIMessages: Array<{ role: string; content: string }> = [
+          { role: 'system', content: systemInstruction + `\n\nLIVE SYSTEM CONTEXT:\n${JSON.stringify(liveContext)}` }
+        ];
+
+        // Add sanitized history
+        if (Array.isArray(history)) {
+          for (const msg of history.slice(-6)) {
+            if (msg.role && msg.content) {
+              openAIMessages.push({
+                role: msg.role === 'user' ? 'user' : 'assistant',
+                content: String(msg.content)
+              });
+            }
+          }
+        }
+
+        openAIMessages.push({ role: 'user', content: cleanQuery });
+
+        const openAiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: openAIMessages,
+            temperature: 0.3,
+            max_tokens: 600
+          })
+        });
+
+        if (openAiRes.ok) {
+          const gptData = await openAiRes.json();
+          const gptText = gptData.choices?.[0]?.message?.content?.trim();
+          if (gptText) {
+            return res.json({
+              success: true,
+              spokenResponse: cleanSpokenText(gptText),
+              markdownResponse: gptText,
+              speechLang,
+              modelUsed: 'ChatGPT (GPT-4o Mini)',
+              modelId: 'chatgpt-4o',
+              actionType,
+              actionUrl,
+              actionTitle,
+              matchedToken: matchedTokenInfo,
+              mspData: MSP_RATES,
+              followUpSuggestions: getFollowUpSuggestions(cleanQuery, language)
+            });
+          }
+        }
+      } catch (openAiErr) {
+        console.warn('OpenAI request failed, continuing to Gemini/Fallback:', openAiErr);
+      }
+    }
+
+    // Strategy 2: Google Gemini 3.7 Flash (Primary official engine via @google/genai)
+    const ai = getGeminiClient();
+    if (ai) {
+      try {
+        // Construct conversation contents with system instruction and history
+        let promptText = `
+FARMER'S QUESTION: "${cleanQuery}"
+LANGUAGE PREFERENCE: ${language}
+
+LIVE MANDI & PROCUREMENT GROUND TRUTH:
+${JSON.stringify(liveContext, null, 2)}
+`;
+
+        // If history is provided, include the recent dialogue context
+        if (Array.isArray(history) && history.length > 0) {
+          const recentHistoryText = history.slice(-4).map(h => `${h.role === 'user' ? 'Farmer' : 'Assistant'}: ${h.content}`).join('\n');
+          promptText = `CONVERSATION HISTORY:\n${recentHistoryText}\n\n` + promptText;
+        }
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.7-flash',
+          contents: promptText,
+          config: {
+            systemInstruction: systemInstruction,
+            temperature: 0.25
+          }
+        });
+
+        const geminiText = response.text || '';
+        if (geminiText.trim()) {
+          return res.json({
+            success: true,
+            spokenResponse: cleanSpokenText(geminiText),
+            markdownResponse: geminiText.trim(),
+            speechLang,
+            modelUsed: 'Google Gemini 3.7 Flash',
+            modelId: 'gemini-3.7-flash',
+            actionType,
+            actionUrl,
+            actionTitle,
+            matchedToken: matchedTokenInfo,
+            mspData: MSP_RATES,
+            followUpSuggestions: getFollowUpSuggestions(cleanQuery, language)
+          });
+        }
+      } catch (geminiErr: any) {
+        console.error('Gemini generateContent error:', geminiErr);
+      }
+    }
+
+    // Strategy 3: Grounded Intelligent Fallback Engine
+    const fallback = generateIntelligentFallback(cleanQuery, language, matchedTokenInfo, allCenters, allSchedules);
     return res.json({
       success: true,
-      spokenResponse: fallbackAnswer.text,
-      speechLang: fallbackAnswer.lang,
+      spokenResponse: fallback.text,
+      markdownResponse: fallback.text,
+      speechLang: fallback.lang || speechLang,
+      modelUsed: 'KisanSetu Intelligent Grounding',
+      modelId: 'kisan-auto',
+      actionType,
+      actionUrl,
+      actionTitle,
       matchedToken: matchedTokenInfo,
-      actionUrl: matchedTokenInfo ? `/status.html?token=${matchedTokenInfo.token_number}` : null,
-      mspData: MSP_RATES
+      mspData: MSP_RATES,
+      followUpSuggestions: getFollowUpSuggestions(cleanQuery, language)
     });
 
   } catch (error: any) {
-    console.error('Gemini Voice Assistant error:', error);
+    console.error('Voice Assistant global handler error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to process voice request with Gemini',
+      message: 'Failed to process voice request',
       error: error.message
     });
   }
@@ -219,54 +388,114 @@ geminiVoiceRouter.get('/quick-voice-prompts', (req, res) => {
       title_hi: 'आज का सरकारी भाव (MSP)',
       title_te: 'ఈరోజు మద్దతు ధరలు (MSP)',
       title_en: "Today's MSP Crop Rates",
-      query_hi: 'आज का सरकारी भाव और गेहूं धान का रेट क्या है?',
-      query_te: 'ఈరోజు వరి మరియు గోధుమల మద్దతు ధర ఎంత?',
-      query_en: 'What are the current MSP rates for Wheat and Paddy?'
+      title_pa: 'ਅੱਜ ਦਾ ਸਰਕਾਰੀ ਰੇਟ (MSP)',
+      query_hi: 'आज का सरकारी समर्थन मूल्य (MSP) और गेहूं व धान का रेट क्या है?',
+      query_te: 'ఈరోజు వరి మరియు గోధుమల ప్రభుత్వ మద్దతు ధరలు ఎంత?',
+      query_en: 'What are the current government MSP rates for Wheat, Paddy and Mustard?',
+      query_pa: 'ਕਣਕ ਅਤੇ ਝੋਨੇ ਦਾ ਅੱਜ ਦਾ ਸਰਕਾਰੀ ਸਮਰਥਨ ਮੁੱਲ ਕੀ ਹੈ?'
     },
     {
       id: 'token',
       icon: '🎟️',
-      title_hi: 'मेरा टोकन नंबर और कतार',
-      title_te: 'నా టోకెన్ స్థితి & క్యూ నంబర్',
-      title_en: 'Check Token & Queue Status',
-      query_hi: 'मेरा टोकन नंबर A-104 का लाइव स्टेटस क्या है?',
-      query_te: 'నా టోకెన్ A-104 స్టేటస్ చెప్పండి',
-      query_en: 'Tell me the live queue status for Token A-104'
+      title_hi: 'मेरा टोकन व लाइव कतार',
+      title_te: 'నా టోకెన్ & లైవ్ క్యూ',
+      title_en: 'My Token Queue Status',
+      title_pa: 'ਮੇਰਾ ਟੋਕਨ ਅਤੇ ਕਤਾਰ',
+      query_hi: 'मेरा टोकन नंबर A-104 का लाइव स्टेटस और कतार में नंबर बताएं',
+      query_te: 'నా టోకెన్ A-104 లైవ్ స్టేటస్ చెప్పండి',
+      query_en: 'Tell me the live queue position and wait time for Token A-104',
+      query_pa: 'ਮੇਰੇ ਟੋਕਨ A-104 ਦਾ ਲਾਈਵ ਸਟੇਟਸ ਦੱਸੋ'
     },
     {
       id: 'slot',
       icon: '📅',
-      title_hi: 'फसल बेचने का स्लॉट कैसे बुक करें?',
-      title_te: 'స్లాట్ ఎలా బుక్ చేసుకోవాలి?',
-      title_en: 'How to Book Crop Drop-off Slot',
+      title_hi: 'फसल बेचने का स्लॉट बुक करें',
+      title_te: 'స్లాట్ ఎలా బుక్ చేయాలి?',
+      title_en: 'Book Drop-off Slot',
+      title_pa: 'ਸਲਾਟ ਕਿਵੇਂ ਬੁੱਕ ਕਰਨਾ ਹੈ?',
       query_hi: 'फसल बेचने के लिए ऑनलाइन टोकन स्लॉट कैसे बुक करें?',
-      query_te: 'ధాన్యం అమ్మడానికి స్లాట్ ఎలా బుక్ చేయాలి?',
-      query_en: 'How do I book a crop procurement slot online?'
+      query_te: 'ధాన్యం సేకరణ కోసం స్లాట్ ఎలా బుక్ చేయాలి?',
+      query_en: 'How do I book a crop procurement drop-off slot online?',
+      query_pa: 'ਫਸਲ ਵੇਚਣ ਲਈ ਆਨਲਾਈਨ ਟੋਕਨ ਸਲਾਟ ਕਿਵੇਂ ਬੁੱਕ ਕਰੀਏ?'
     },
     {
       id: 'documents',
       icon: '📄',
       title_hi: 'मंडी में क्या कागज साथ ले जाएं?',
-      title_te: 'కేంద్రానికి ఏ పత్రాలు తీసుకురావాలి?',
-      title_en: 'What Documents to Bring',
+      title_te: 'కేంద్రానికి ఏ పత్రాలు కావాలి?',
+      title_en: 'Required Documents',
+      title_pa: 'ਮੰਡੀ ਵਿੱਚ ਕਿਹੜੇ ਕਾਗਜ਼ ਲੈ ਕੇ ਜਾਣੇ ਹਨ?',
       query_hi: 'खरीद केंद्र पर क्या क्या दस्तावेज और कागज साथ ले जाने होंगे?',
       query_te: 'కొనుగోలు కేంద్రానికి ఏ పత్రాలు తీసుకురావాలి?',
-      query_en: 'What documents are required at the procurement center?'
+      query_en: 'What documents do I need to bring to the procurement center?',
+      query_pa: 'ਖਰੀਦ ਕੇਂਦਰ ਵਿੱਚ ਕਿਹੜੇ ਦਸਤਾਵੇਜ਼ ਲੈ ਕੇ ਜਾਣੇ ਪੈਣਗੇ?'
     },
     {
       id: 'centers',
       icon: '📍',
-      title_hi: 'नजदीकी खरीद केंद्र व समय',
-      title_te: 'సమీప కొనుగోలు కేంద్రం & వేళలు',
-      title_en: 'Nearest Center & Timings',
-      query_hi: 'नजदीकी सरकारी खरीद केंद्र कब खुलता है और संपर्क नंबर क्या है?',
+      title_hi: 'नजदीकी केंद्र व समय',
+      title_te: 'సమీప కేంద్రం & వేళలు',
+      title_en: 'Center Timings & Contact',
+      title_pa: 'ਨੇੜਲਾ ਕੇਂਦਰ ਅਤੇ ਸਮਾਂ',
+      query_hi: 'सरकारी खरीद केंद्र का समय क्या है और हेल्पलाइन नंबर क्या है?',
       query_te: 'సమీప కేంద్రం పని వేళలు మరియు ఫోన్ నంబర్ ఏమిటి?',
-      query_en: 'What are the procurement center timings and contact numbers?'
+      query_en: 'What are the procurement center operational hours and helpline contact?',
+      query_pa: 'ਸਰਕਾਰੀ ਖਰੀਦ ਕੇਂਦਰ ਦਾ ਸਮਾਂ ਅਤੇ ਹੈਲਪਲਾਈਨ ਨੰਬਰ ਕੀ ਹੈ?'
+    },
+    {
+      id: 'moisture',
+      icon: '💧',
+      title_hi: 'नमी (Moisture) के सरकारी नियम',
+      title_te: 'తేమ శాతం నిబంధనలు',
+      title_en: 'Moisture Rules for Crops',
+      title_pa: 'ਨਮੀ (Moisture) ਦੇ ਨਿਯਮ',
+      query_hi: 'गेहूं और धान में नमी कितने प्रतिशत तक स्वीकार की जाती है?',
+      query_te: 'వరి మరియు గోధుమలలో తేమ శాతం ఎంత ఉండాలి?',
+      query_en: 'What is the maximum allowed moisture percentage for wheat and paddy?',
+      query_pa: 'ਕਣਕ ਅਤੇ ਝੋਨੇ ਵਿੱਚ ਨਮੀ ਦੀ ਕਿੰਨੀ ਹੱਦ ਮਨਜ਼ੂਰ ਹੈ?'
     }
   ];
 
   res.json({ success: true, prompts });
 });
+
+// Helper: Strip markdown formatting for smooth speech synthesizer playback
+function cleanSpokenText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/[*#_`~]/g, '') // remove markdown symbols
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // replace markdown links with text
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Helper: Provide 2-3 dynamic follow up suggestions based on user query
+function getFollowUpSuggestions(query: string, lang: string): string[] {
+  const q = query.toLowerCase();
+  
+  if (lang === 'te' || /[\u0C00-\u0C7F]/.test(query)) {
+    if (q.includes('rate') || q.includes('ధర') || q.includes('msp')) {
+      return ['స్లాట్ ఎలా బుక్ చేయాలి?', 'నా టోకెన్ స్థితి చెప్పండి', 'తేమ శాతం నిబంధనలు ఏమిటి?'];
+    }
+    if (q.includes('token') || q.includes('టోకెన్')) {
+      return ['కేంద్రం సమయం ఏమిటి?', 'ఏ పత్రాలు తీసుకురావాలి?', 'ఈరోజు మద్దతు ధర ఎంత?'];
+    }
+    return ['ఈరోజు మద్దతు ధర ఎంత?', 'స్లాట్ ఎలా బుక్ చేయాలి?', 'సమీప కేంద్రం ఎక్కడ ఉంది?'];
+  }
+
+  // Hindi / default
+  if (q.includes('rate') || q.includes('bhav') || q.includes('भाव') || q.includes('msp')) {
+    return ['फसल बेचने का स्लॉट कैसे बुक करें?', 'मंडी में क्या कागज साथ ले जाएं?', 'गेहूं में नमी का क्या नियम है?'];
+  }
+  if (q.includes('token') || q.includes('टोकन') || q.includes('status')) {
+    return ['मंडी का समय और पता क्या है?', 'पेमेंट सीधे बैंक में कब आएगी?', 'आज का सरकारी भाव क्या है?'];
+  }
+  if (q.includes('slot') || q.includes('स्लॉट') || q.includes('book')) {
+    return ['मंडी में कौन से दस्तावेज चाहिए?', 'आज का गेहूं का भाव क्या है?', 'मेरा टोकन नंबर चेक करें'];
+  }
+
+  return ['आज का सरकारी भाव (MSP) क्या है?', 'मेरा टोकन नंबर चेक करें', 'फसल बेचने का स्लॉट कैसे बुक करें?'];
+}
 
 function generateIntelligentFallback(
   query: string,
@@ -281,7 +510,7 @@ function generateIntelligentFallback(
   if (lang === 'te' || /[\u0C00-\u0C7F]/.test(query) || q.includes('telugu') || q.includes('dharalu') || q.includes('token') || q.includes('mariyu')) {
     if (tokenInfo) {
       return {
-        text: `నమస్కారం రైతు సోదరా. మీ టోకెన్ నంబర్ ${tokenInfo.token_number}. పంట ${tokenInfo.crop_name}, పరిమాణం ${tokenInfo.quantity_quintals} క్వింటాళ్లు. మీ ప్రస్తుత స్థితి: ${tokenInfo.status}. మీ ముందు ${tokenInfo.queue_position} మంది రైతులు ఉన్నారు. వేచి ఉండే సమయం సుమారు ${tokenInfo.estimated_waiting_minutes} నిమిషాలు. కేంద్రం: ${tokenInfo.center_name}.`,
+        text: `నమస్కారం రైతు సోదరా. మీ టోకెన్ నంబర్ ${tokenInfo.token_number}. పంట ${tokenInfo.crop_name}, పరిమాణం ${tokenInfo.quantity_quintals} క్వింటాళ్లు. ప్రస్తుత స్థితి: ${tokenInfo.status}. మీ ముందు ${tokenInfo.queue_position} మంది రైతులు ఉన్నారు. వేచి ఉండే సమయం సుమారు ${tokenInfo.estimated_waiting_minutes} నిమిషాలు. కేంద్రం: ${tokenInfo.center_name}.`,
         lang: 'te-IN'
       };
     }
@@ -333,9 +562,8 @@ function generateIntelligentFallback(
   }
 
   if (q.includes('center') || q.includes('kendra') || q.includes('mandi') || q.includes('समय') || q.includes('केंद्र')) {
-    const center = centers[0];
     return {
-      text: `सरकारी खरीद केंद्र सुबह 8 बजे से शाम 6 बजे तक खुले रहते हैं। आपके नजदीकी केंद्र पर गेहूं, धान और सरसों की तुलाई की जा रही है। किसी भी सहायता के लिए हेल्पडेस्क पर संपर्क करें।`,
+      text: 'सरकारी खरीद केंद्र सुबह 8 बजे से शाम 6 बजे तक खुले रहते हैं। आपके नजदीकी केंद्र पर गेहूं, धान और सरसों की तुलाई की जा रही है। किसी भी सहायता के लिए हेल्पडेस्क पर संपर्क करें।',
       lang: 'hi-IN'
     };
   }

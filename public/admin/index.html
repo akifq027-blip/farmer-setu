@@ -51,9 +51,15 @@
       <button class="admin-tab-btn" data-tab="announcements">
         📢 Broadcast Announcements
       </button>
-      <button onclick="triggerDemoReset()" class="btn btn-outline btn-sm" style="margin-left:auto; font-size:12px;">
-        🔄 Reset Prototype Data
-      </button>
+      <div id="db-status-pill" style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+        <span id="db-indicator" title="Aiven MySQL Database Connection Status" style="font-size:11px; font-weight:600; padding:4px 10px; border-radius:999px; background:#1e293b; color:#94a3b8; border:1px solid #334155; display:inline-flex; align-items:center; gap:6px;">
+          <span id="db-dot" style="width:7px; height:7px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+          <span id="db-label">Database: MySQL (Aiven)</span>
+        </span>
+        <button onclick="triggerDemoReset()" class="btn btn-outline btn-sm" style="font-size:12px;">
+          🔄 Reset Data
+        </button>
+      </div>
     </div>
   </div>
 
