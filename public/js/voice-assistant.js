@@ -1,6 +1,7 @@
 /**
- * KisanSetu - Gemini Voice Assistant for Farmers
- * Voice-first conversational AI powered by Google Gemini for farmers who cannot read.
+ * KisanSetu - Kisan Mitr Digital Voice Assistant for Farmers
+ * Natural, warm, multi-lingual agricultural procurement assistant supporting
+ * Hindi, Telugu, and English with live database integration and voice interruption.
  */
 
 (function () {
@@ -10,81 +11,72 @@
   let isSpeaking = false;
   let recognition = null;
   let currentSpeechUtterance = null;
-  let currentLanguage = localStorage.getItem('kisansetu_lang') || 'hi'; // Default Hindi for broad voice accessibility
+  let currentLanguage = localStorage.getItem('kisansetu_lang') || 'hi';
   let lastSpokenText = '';
   let lastSpeechLang = 'hi-IN';
+  let conversationHistory = [];
 
-  // Voice topics in multiple regional languages
+  // Farmer-friendly quick voice topics in Hindi, Telugu, and English
   const TOPIC_PRESETS = [
     {
       id: 'msp',
       icon: '🌾',
       hi: 'आज का सरकारी भाव (MSP)',
       te: 'ఈరోజు మద్దతు ధరలు (MSP)',
-      en: 'Current MSP Crop Rates',
-      pa: 'ਅੱਜ ਦਾ ਸਰਕਾਰੀ ਭਾਅ (MSP)',
-      mr: 'आजचा हमीभाव (MSP)',
-      query_hi: 'आज का सरकारी भाव और गेहूं धान का समर्थन मूल्य क्या है?',
-      query_te: 'ఈరోజు వరి మరియు గోధుమల మద్దతు ధర ఎంత?',
-      query_en: 'What are the current government MSP rates for Wheat and Paddy?',
-      query_pa: 'ਅੱਜ ਕਣਕ ਅਤੇ ਝੋਨੇ ਦਾ ਸਰਕਾਰੀ ਐਮ.ਐਸ.ਪੀ ਭਾਅ ਕੀ ਹੈ?',
-      query_mr: 'गहू आणि भाताचा आजचा सरकारी हमीभाव काय आहे?'
+      en: "Today's MSP Crop Rates",
+      query_hi: 'आज का सरकारी समर्थन मूल्य (MSP) और गेहूं व धान का रेट क्या है?',
+      query_te: 'ఈరోజు వరి మరియు గోధుమల ప్రభుత్వ మద్దతు ధరలు ఎంత?',
+      query_en: 'What are the current government MSP rates for Wheat, Paddy and Mustard?'
     },
     {
       id: 'token',
       icon: '🎟️',
-      hi: 'मेरा टोकन व कतार स्थिति',
-      te: 'నా టోకెన్ స్థితి & క్యూ',
+      hi: 'मेरा टोकन व लाइव कतार',
+      te: 'నా టోకెన్ & లైవ్ క్యూ',
       en: 'My Token Queue Status',
-      pa: 'ਮੇਰਾ ਟੋਕਨ ਤੇ ਕਤਾਰ ਸਥਿਤੀ',
-      mr: 'माझे टोकन व रांग स्थिती',
-      query_hi: 'मेरा टोकन नंबर A-104 का लाइव स्टेटस और कतार बताओ',
-      query_te: 'నా టోకెన్ A-104 స్టేటస్ చెప్పండి',
-      query_en: 'Tell me the live queue status of Token A-104',
-      query_pa: 'ਮੇਰੇ ਟੋਕਨ A-104 ਦੀ ਲਾਈਵ ਸਥਿਤੀ ਦੱਸੋ',
-      query_mr: 'माझ्या A-104 टोकनची सद्यस्थिती काय आहे?'
+      query_hi: 'मेरा टोकन नंबर A-104 का लाइव स्टेटस और कतार बताएं',
+      query_te: 'నా టోకెన్ A-104 లైవ్ స్టేటస్ చెప్పండి',
+      query_en: 'Tell me the live queue position and wait time for Token A-104'
     },
     {
       id: 'slot',
       icon: '📅',
-      hi: 'फसल बेचने का स्लॉट कैसे बुक करें?',
+      hi: 'फसल बेचने का स्लॉट बुक करें',
       te: 'స్లాట్ ఎలా బుక్ చేయాలి?',
-      en: 'How to Book Drop-off Slot',
-      pa: 'ਸਲੋਟ ਕਿਵੇਂ ਬੁੱਕ ਕਰੀਏ?',
-      mr: 'स्लॉट कसा बुक करायचा?',
+      en: 'Book Drop-off Slot',
       query_hi: 'फसल बेचने के लिए ऑनलाइन टोकन स्लॉट कैसे बुक करें?',
       query_te: 'ధాన్యం సేకరణ కోసం స్లాట్ ఎలా బుక్ చేయాలి?',
-      query_en: 'How do I book a crop procurement slot online?',
-      query_pa: 'ਫਸਲ ਵੇਚਣ ਲਈ ਸਲੋਟ ਕਿਵੇਂ ਬੁੱਕ ਕਰਨਾ ਹੈ?',
-      query_mr: 'धान्य विक्रीसाठी स्लॉट कसा बुक करावा?'
+      query_en: 'How do I book a crop procurement drop-off slot online?'
     },
     {
       id: 'documents',
       icon: '📄',
       hi: 'मंडी में क्या कागज साथ ले जाएं?',
-      te: 'కేంద్రానికి ఏ పత్రాలు తీసుకురావాలి?',
-      en: 'What Documents to Bring',
-      pa: 'ਕਿਹੜੇ ਕਾਗਜ਼ ਲੈ ਕੇ ਜਾਣੇ ਹਨ?',
-      mr: 'कोणती कागदपत्रे लागतील?',
+      te: 'కేంద్రానికి ఏ పత్రాలు కావాలి?',
+      en: 'Required Documents',
       query_hi: 'खरीद केंद्र पर क्या क्या दस्तावेज और कागज साथ ले जाने होंगे?',
       query_te: 'కొనుగోలు కేంద్రానికి ఏ పత్రాలు తీసుకురావాలి?',
-      query_en: 'What documents are required at the procurement center?',
-      query_pa: 'ਖਰੀਦ ਕੇਂਦਰ ਤੇ ਕਿਹੜੇ ਕਾਗਜ਼ਾਤ ਚਾਹੀਦੇ ਹਨ?',
-      query_mr: 'खरेदी केंद्रावर कोणती कागदपत्रे आवश्यक आहेत?'
+      query_en: 'What documents do I need to bring to the procurement center?'
     },
     {
       id: 'centers',
       icon: '📍',
       hi: 'नजदीकी केंद्र व समय',
-      te: 'సమీప కొనుగోలు కేంద్రం వేళలు',
+      te: 'సమీప కేంద్రం & వేళలు',
       en: 'Center Timings & Contact',
-      pa: 'ਨੇੜਲਾ ਕੇਂਦਰ ਤੇ ਸਮਾਂ',
-      mr: 'जवळचे केंद्र व वेळ',
-      query_hi: 'सरकारी खरीद केंद्र का समय क्या है और कैसे संपर्क करें?',
-      query_te: 'సమీప కేంద్రం పని వేళలు ఏమిటి?',
-      query_en: 'What are the procurement center timings and contact details?',
-      query_pa: 'ਸਰਕਾਰੀ ਖਰੀਦ ਕੇਂਦਰ ਦਾ ਸਮਾਂ ਕੀ ਹੈ?',
-      query_mr: 'सरकारी खरेदी केंद्राची वेळ काय आहे?'
+      query_hi: 'सरकारी खरीद केंद्र का समय क्या है और हेल्पलाइन नंबर क्या है?',
+      query_te: 'సమీప కేంద్రం పని వేళలు మరియు ఫోన్ నంబర్ ఏమిటి?',
+      query_en: 'What are the procurement center operational hours and helpline contact?'
+    },
+    {
+      id: 'moisture',
+      icon: '💧',
+      hi: 'नमी (Moisture) के नियम',
+      te: 'తేమ శాతం నిబంధనలు',
+      en: 'Crop Moisture Standards',
+      query_hi: 'गेहूं और धान में नमी कितने प्रतिशत तक स्वीकार की जाती है?',
+      query_te: 'వరి మరియు గోధుమలలో తేమ శాతం ఎంత ఉండాలి?',
+      query_en: 'What is the maximum allowed moisture percentage for wheat and paddy?'
     }
   ];
 
@@ -93,6 +85,9 @@
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       try {
+        if (recognition) {
+          try { recognition.abort(); } catch (e) {}
+        }
         recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
@@ -101,10 +96,7 @@
         const langCodeMap = {
           'hi': 'hi-IN',
           'te': 'te-IN',
-          'en': 'en-IN',
-          'pa': 'pa-IN',
-          'mr': 'mr-IN',
-          'ta': 'ta-IN'
+          'en': 'en-IN'
         };
         recognition.lang = langCodeMap[currentLanguage] || 'hi-IN';
 
@@ -115,17 +107,26 @@
 
         recognition.onresult = function (event) {
           const transcript = event.results[0][0].transcript;
-          console.log('🎤 Farmer Spoke:', transcript);
           isListening = false;
+          
+          // Auto-detect language from transcript if it has distinctive characters
+          if (/[\u0C00-\u0C7F]/.test(transcript)) {
+            setAssistantLanguage('te', false);
+          } else if (/[\u0900-\u097F]/.test(transcript)) {
+            setAssistantLanguage('hi', false);
+          } else if (/^[a-zA-Z0-9\s.,?!'-]+$/.test(transcript) && currentLanguage === 'en') {
+            setAssistantLanguage('en', false);
+          }
+
           handleVoiceQuery(transcript);
         };
 
         recognition.onerror = function (event) {
-          console.warn('SpeechRecognition error:', event.error);
           isListening = false;
-          if (event.error === 'no-speech') {
+          const err = event.error;
+          if (err === 'no-speech') {
             updateUIState('idle', getLocalizedMessage('no_speech'));
-          } else if (event.error === 'not-allowed') {
+          } else if (err === 'not-allowed' || err === 'service-not-allowed') {
             updateUIState('idle', getLocalizedMessage('mic_permission'));
           } else {
             updateUIState('idle', getLocalizedMessage('try_again'));
@@ -140,83 +141,76 @@
           }
         };
       } catch (e) {
-        console.warn('Error setting up speech recognition:', e);
+        console.warn('SpeechRecognition initialization notice:', e);
       }
     }
   }
 
   function getLocalizedMessage(key) {
     const msgs = {
+      idle: {
+        hi: 'किसान मित्र (Kisan Mitr)',
+        te: 'కిసాన్ మిత్ర (Kisan Mitr)',
+        en: 'Kisan Mitr'
+      },
       listening: {
-        hi: 'किसान भाई बोलिए... हम सुन रहे हैं 🌾',
-        te: 'రైతు సోదరా మాట్లాడండి... వింటున్నాము 🌾',
-        en: 'Listening... Please speak your question 🌾',
-        pa: 'ਸੁਣ ਰਹੇ ਹਾਂ... ਕਿਸਾਨ ਵੀਰੋ ਬੋਲੋ 🌾',
-        mr: 'ऐकत आहोत... शेतकरी बंधूंनो बोला 🌾'
+        hi: 'Listening... (सुन रहे हैं...)',
+        te: 'Listening... (వింటున్నాము...)',
+        en: 'Listening...'
       },
       thinking: {
-        hi: 'जेमिनी एआई जानकारी खोज रहा है...',
-        te: 'జెమినీ ఏఐ సమాచారం వెతుకుతోంది...',
-        en: 'Gemini AI is fetching information...',
-        pa: 'ਜੇਮਿਨੀ ਏਆਈ ਜਾਣਕਾਰੀ ਲੱਭ ਰਿਹਾ ਹੈ...',
-        mr: 'जेमिनी एआय माहिती शोधत आहे...'
+        hi: 'Thinking... (सोच रहे हैं...)',
+        te: 'Thinking... (ఆలోచిస్తున్నాము...)',
+        en: 'Thinking...'
       },
       speaking: {
-        hi: 'किसान मित्र बोल रहा है... ध्यान से सुनें 🔊',
-        te: 'రైతు మిత్ర సమాధానం ఇస్తున్నారు... వినండి 🔊',
-        en: 'Kisan Mitra is speaking... Listen carefully 🔊',
-        pa: 'ਕਿਸਾਨ ਮਿੱਤਰ ਬੋਲ ਰਿਹਾ ਹੈ... ਧਿਆਨ ਨਾਲ ਸੁਣੋ 🔊',
-        mr: 'किसान मित्र बोलत आहेत... ऐका 🔊'
+        hi: 'Speaking... (बोल रहे हैं...)',
+        te: 'Speaking... (సమాధానం ఇస్తున్నారు...)',
+        en: 'Speaking...'
       },
       tap_to_speak: {
         hi: 'माइक दबाकर बोलें या नीचे कोई भी विषय चुनें',
         te: 'మైక్ నొక్కి మాట్లాడండి లేదా కింద ఎంచుకోండి',
-        en: 'Tap the mic to speak or tap any topic below',
-        pa: 'ਮਾਈਕ ਦਬਾ ਕੇ ਬੋਲੋ ਜਾਂ ਹੇਠਾਂ ਵਿਸ਼ਾ ਚੁਣੋ',
-        mr: 'माइक दाबून बोला किंवा खालील विषय निवडा'
+        en: 'Tap the mic to speak or choose a topic below'
       },
       no_speech: {
-        hi: 'आवाज सुनाई नहीं दी, कृपया माइक दबाकर फिर बोलें',
-        te: 'వాయిస్ వినిపించలేదు, దయచేసి మళ్ళీ మాట్లాడండి',
-        en: 'No speech heard. Please tap and speak again.',
-        pa: 'ਆਵਾਜ਼ ਨਹੀਂ ਸੁਣੀ, ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਬੋਲੋ',
-        mr: 'आवाज ऐकू आला नाही, कृपया पुन्हा बोला'
+        hi: 'मैं सुन नहीं पाया। कृपया फिर से बोलें।',
+        te: 'వినపడలేదు. దయచేసి మళ్ళీ మాట్లాడండి.',
+        en: "I didn't catch that. Please try again."
       },
       mic_permission: {
-        hi: 'कृपया ब्राउज़र में माइक्रोफोन की अनुमति दें',
-        te: 'దయచేసి మైక్రోఫోన్ అనుమతి ఇవ్వండి',
-        en: 'Please allow microphone access in your browser',
-        pa: 'ਕਿਰਪਾ ਕਰਕੇ ਮਾਈਕ੍ਰੋਫੋਨ ਦੀ ਇਜਾਜ਼ਤ ਦਿਓ',
-        mr: 'कृपया मायक्रोफोनची परवानगी द्या'
+        hi: 'माइक्रोफ़ोन की अनुमति बंद है। कृपया अपने ब्राउज़र में माइक की अनुमति दें।',
+        te: 'మైక్రోఫోన్ అనుమతి నిరాకరించబడింది. దయచేసి బ్రౌజర్‌లో మైక్రోఫోన్‌ను అనుమతించండి.',
+        en: 'Microphone access is denied. Please allow microphone access in browser.'
       },
       try_again: {
-        hi: 'माइक दबाकर अपना सवाल फिर से पूछें',
-        te: 'మళ్ళీ మైక్ నొక్కి మాట్లాడండి',
-        en: 'Tap mic and ask again',
-        pa: 'ਦੁਬਾਰਾ ਮਾਈਕ ਦਬਾ ਕੇ ਪੁੱਛੋ',
-        mr: 'पुन्हा माइक दाबून विचारा'
+        hi: 'कृपया माइक दबाकर फिर से बोलें।',
+        te: 'దయచేసి మైక్ నొక్కి మళ్ళీ మాట్లాడండి.',
+        en: 'Please tap the mic and try again.'
       }
     };
 
     const lang = (currentLanguage in msgs[key]) ? currentLanguage : 'hi';
-    return msgs[key][lang] || msgs[key]['hi'] || msgs[key]['en'];
+    return msgs[key][lang] || msgs[key]['en'];
   }
 
   // Inject HTML Elements for Floating FAB and Modal
   function createVoiceAssistantUI() {
+    if (document.getElementById('kisan-voice-fab-btn')) return;
+
     // 1. Floating Action Button (FAB)
     const fab = document.createElement('button');
     fab.id = 'kisan-voice-fab-btn';
     fab.className = 'kisan-voice-fab';
-    fab.setAttribute('aria-label', 'Open Google Gemini Voice Assistant for Farmers');
+    fab.setAttribute('aria-label', 'Open Kisan Mitr Farmer Support Voice Assistant');
     fab.innerHTML = `
       <div class="kisan-voice-mic-icon-wrap">
         🎙️
       </div>
       <div class="kisan-voice-fab-text">
         <div class="kisan-voice-fab-title">
-          <span>Kisan Gemini Voice</span>
-          <span class="kisan-voice-fab-badge">AI Assistant</span>
+          <span>Kisan Mitr</span>
+          <span class="kisan-voice-fab-badge">Farmer Support</span>
         </div>
         <div class="kisan-voice-fab-sub">
           बोलकर जानकारी पाएं • మాట్లాడి తెలుసుకోండి
@@ -229,17 +223,17 @@
     modalOverlay.id = 'kisan-voice-modal-overlay';
     modalOverlay.className = 'kisan-voice-modal-overlay';
     modalOverlay.innerHTML = `
-      <div class="kisan-voice-modal" role="dialog" aria-modal="true">
+      <div class="kisan-voice-modal" role="dialog" aria-modal="true" aria-labelledby="kisan-assistant-title">
         <!-- Header -->
         <div class="kisan-voice-header">
           <div class="kisan-voice-header-brand">
             <div class="kisan-voice-avatar">🌾</div>
             <div>
-              <h2 class="kisan-voice-header-title">Kisan Mitra AI Voice</h2>
-              <p class="kisan-voice-header-sub">Powered by Google Gemini • किसान वाणी सहायता</p>
+              <h2 id="kisan-assistant-title" class="kisan-voice-header-title">Kisan Mitr</h2>
+              <p class="kisan-voice-header-sub">Government Farmer Support • డిజిటల్ రైతు మిత్ర</p>
             </div>
           </div>
-          <button id="kisan-voice-close-btn" class="kisan-voice-close-btn" aria-label="Close Assistant">✕</button>
+          <button id="kisan-voice-close-btn" class="kisan-voice-close-btn" aria-label="Close Kisan Mitr">✕</button>
         </div>
 
         <!-- Body -->
@@ -250,14 +244,13 @@
             <button class="kisan-voice-lang-pill ${currentLanguage === 'hi' ? 'active' : ''}" data-lang="hi">🇮🇳 हिन्दी (Hindi)</button>
             <button class="kisan-voice-lang-pill ${currentLanguage === 'te' ? 'active' : ''}" data-lang="te">🇮🇳 తెలుగు (Telugu)</button>
             <button class="kisan-voice-lang-pill ${currentLanguage === 'en' ? 'active' : ''}" data-lang="en">🇬🇧 English</button>
-            <button class="kisan-voice-lang-pill ${currentLanguage === 'pa' ? 'active' : ''}" data-lang="pa">🇮🇳 ਪੰਜਾਬੀ (Punjabi)</button>
-            <button class="kisan-voice-lang-pill ${currentLanguage === 'mr' ? 'active' : ''}" data-lang="mr">🇮🇳 मराठी (Marathi)</button>
           </div>
 
           <!-- Status Card -->
           <div class="kisan-voice-status-card">
-            <div id="kisan-voice-status-icon" class="kisan-voice-status-icon">🎙️</div>
-            <div id="kisan-voice-status-text" class="kisan-voice-status-text">${getLocalizedMessage('tap_to_speak')}</div>
+            <div id="kisan-voice-status-icon" class="kisan-voice-status-icon">🌾</div>
+            <div id="kisan-voice-status-text" class="kisan-voice-status-text">Kisan Mitr</div>
+            <div id="kisan-voice-status-sub" style="font-size:13px; color:#52796F; margin-bottom:12px;">${getLocalizedMessage('tap_to_speak')}</div>
             
             <!-- Sound Wave Visualizer -->
             <div id="kisan-audio-wave" class="kisan-audio-wave">
@@ -271,29 +264,39 @@
               <div class="kisan-audio-bar"></div>
             </div>
 
-            <!-- Big Central Mic Button -->
-            <button id="kisan-main-mic-btn" class="kisan-voice-mic-main-btn" aria-label="Tap to speak">
-              🎙️
-            </button>
+            <!-- Central Mic Button with Interruption Capability -->
+            <div style="display:flex; align-items:center; gap:16px;">
+              <button id="kisan-main-mic-btn" class="kisan-voice-mic-main-btn" aria-label="Tap to speak or interrupt">
+                🎙️
+              </button>
+              <button id="kisan-interrupt-btn" class="kisan-interrupt-btn" style="display:none; background:#E63946; color:#ffffff; border:none; border-radius:12px; padding:10px 16px; font-weight:800; font-size:13px; cursor:pointer;" aria-label="Stop Speaking">
+                ⏹️ Stop & Speak
+              </button>
+            </div>
           </div>
 
           <!-- Spoken Response Box -->
           <div id="kisan-voice-response-box" class="kisan-voice-response-box">
             <div class="kisan-voice-response-header">
-              <span class="kisan-voice-response-badge">🔊 उत्तर (Spoken Answer)</span>
-              <button id="kisan-repeat-speech-btn" class="kisan-voice-repeat-btn">
-                <span>🔊 फिर से सुनें (Repeat)</span>
-              </button>
+              <span class="kisan-voice-response-badge">🔊 उत्तर / సమాధానం</span>
+              <div style="display:flex; gap:8px;">
+                <button id="kisan-repeat-speech-btn" class="kisan-voice-repeat-btn" aria-label="Repeat speech">
+                  <span>🔊 Repeat</span>
+                </button>
+              </div>
             </div>
             <div id="kisan-voice-response-text" class="kisan-voice-response-text"></div>
             <div id="kisan-voice-action-container" style="margin-top: 12px;"></div>
+            
+            <!-- Dynamic follow up suggestions -->
+            <div id="kisan-followups-container" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;"></div>
           </div>
 
-          <!-- Quick Spoken Topics for Non-Readers -->
+          <!-- Quick Spoken Topics for Fast Access -->
           <div class="kisan-voice-topics-section">
             <div class="kisan-voice-topics-title">
               <span>👉</span>
-              <span>सीधे दबाकर सुनें (One-Tap Voice Topics):</span>
+              <span>सीधे दबाकर पूछें (One-Tap Topics):</span>
             </div>
             <div id="kisan-voice-topics-grid" class="kisan-voice-topics-grid">
               <!-- Rendered dynamically -->
@@ -306,7 +309,7 @@
               type="text" 
               id="kisan-voice-text-input" 
               class="kisan-voice-text-input" 
-              placeholder="या यहाँ सवाल लिखें... (उदा. आज का गेहूं का भाव)"
+              placeholder="या यहाँ सवाल लिखें (उदा. आज का भाव, टोकन A-104)..."
             />
             <button id="kisan-voice-text-send-btn" class="kisan-voice-text-send-btn">पूछें</button>
           </div>
@@ -329,7 +332,7 @@
     grid.innerHTML = TOPIC_PRESETS.map(t => {
       const label = t[currentLanguage] || t.hi || t.en;
       return `
-        <button class="kisan-voice-topic-card" data-topic-id="${t.id}">
+        <button class="kisan-voice-topic-card" data-topic-id="${t.id}" aria-label="${label}">
           <span class="kisan-voice-topic-icon">${t.icon}</span>
           <span class="kisan-voice-topic-label">${label}</span>
         </button>
@@ -339,31 +342,39 @@
 
   function updateUIState(state, customMessage) {
     const statusText = document.getElementById('kisan-voice-status-text');
+    const statusSub = document.getElementById('kisan-voice-status-sub');
     const statusIcon = document.getElementById('kisan-voice-status-icon');
     const wave = document.getElementById('kisan-audio-wave');
     const mainMicBtn = document.getElementById('kisan-main-mic-btn');
+    const interruptBtn = document.getElementById('kisan-interrupt-btn');
 
     if (!statusText || !wave || !mainMicBtn) return;
 
     wave.className = 'kisan-audio-wave';
     mainMicBtn.classList.remove('listening');
+    if (interruptBtn) interruptBtn.style.display = 'none';
 
     if (state === 'listening') {
       statusIcon.textContent = '👂';
-      statusText.textContent = customMessage || getLocalizedMessage('listening');
+      statusText.textContent = 'Listening...';
+      if (statusSub) statusSub.textContent = customMessage || getLocalizedMessage('listening');
       wave.classList.add('active');
       mainMicBtn.classList.add('listening');
     } else if (state === 'thinking') {
-      statusIcon.textContent = '🧠';
-      statusText.textContent = customMessage || getLocalizedMessage('thinking');
+      statusIcon.textContent = '⏳';
+      statusText.textContent = 'Thinking...';
+      if (statusSub) statusSub.textContent = customMessage || getLocalizedMessage('thinking');
       wave.classList.add('active');
     } else if (state === 'speaking') {
       statusIcon.textContent = '🗣️';
-      statusText.textContent = customMessage || getLocalizedMessage('speaking');
+      statusText.textContent = 'Speaking...';
+      if (statusSub) statusSub.textContent = customMessage || getLocalizedMessage('speaking');
       wave.classList.add('speaking');
+      if (interruptBtn) interruptBtn.style.display = 'inline-block';
     } else {
-      statusIcon.textContent = '🎙️';
-      statusText.textContent = customMessage || getLocalizedMessage('tap_to_speak');
+      statusIcon.textContent = '🌾';
+      statusText.textContent = 'Kisan Mitr';
+      if (statusSub) statusSub.textContent = customMessage || getLocalizedMessage('tap_to_speak');
     }
   }
 
@@ -375,13 +386,11 @@
       if (initialPrompt) {
         handleVoiceQuery(initialPrompt);
       } else {
-        // Welcome speech greeting for non-readers on first tap
+        // Welcoming greeting
         const welcomeGreetings = {
-          hi: 'नमस्ते किसान भाई। मैं आपका किसान मित्र वॉइस असिस्टेंट हूँ। माइक दबाकर अपना सवाल बोलें या नीचे कोई भी विषय चुनें।',
-          te: 'నమస్కారం రైతు సోదరా. నేను మీ కిసాన్ మిత్ర వాయిస్ అసిస్టెంట్‌ని. మైక్ నొక్కి మీ సందేహాన్ని మాట్లాడండి.',
-          en: 'Hello farmer friend. I am Kisan Mitra voice assistant. Tap the mic to ask any question or tap any topic below.',
-          pa: 'ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ ਕਿਸਾਨ ਵੀਰੋ। ਮੈਂ ਤੁਹਾਡਾ ਕਿਸਾਨ ਮਿੱਤਰ ਹਾਂ। ਮਾਈਕ ਦਬਾ ਕੇ ਆਪਣਾ ਸਵਾਲ ਪੁੱਛੋ।',
-          mr: 'नमस्कार शेतकरी बंधूंनो. मी आपला किसान मित्र आहे. माइक दाबून प्रश्न विचारा.'
+          hi: 'नमस्ते किसान भाई। मैं आपका किसान मित्र हूँ। माइक दबाकर अपना सवाल बोलें या नीचे कोई भी विषय चुनें।',
+          te: 'నమస్కారం రైతు సోదరా. నేను మీ కిసాన్ మిత్ర సహాయకుడిని. మైక్ నొక్కి మీ సందేహాన్ని మాట్లాడండి.',
+          en: 'Hello farmer friend. I am Kisan Mitr, your digital procurement assistant. Tap the mic to speak or choose a topic.'
         };
         const welcomeText = welcomeGreetings[currentLanguage] || welcomeGreetings['hi'];
         const speechCode = currentLanguage === 'te' ? 'te-IN' : (currentLanguage === 'en' ? 'en-IN' : 'hi-IN');
@@ -397,25 +406,35 @@
       document.body.style.overflow = '';
       stopSpeaking();
       if (recognition && isListening) {
-        recognition.stop();
+        try { recognition.stop(); } catch (e) {}
         isListening = false;
       }
       updateUIState('idle');
     }
   }
 
+  // Voice Interruption & Toggle
   function toggleListening() {
+    // If assistant is speaking, farmer interruption takes priority!
     if (isSpeaking) {
       stopSpeaking();
+      startRecognitionNow();
+      return;
     }
 
     if (isListening) {
-      if (recognition) recognition.stop();
+      if (recognition) {
+        try { recognition.stop(); } catch (e) {}
+      }
       isListening = false;
       updateUIState('idle');
       return;
     }
 
+    startRecognitionNow();
+  }
+
+  function startRecognitionNow() {
     if (!recognition) {
       initSpeechRecognition();
     }
@@ -425,16 +444,20 @@
         const langCodeMap = {
           'hi': 'hi-IN',
           'te': 'te-IN',
-          'en': 'en-IN',
-          'pa': 'pa-IN',
-          'mr': 'mr-IN',
-          'ta': 'ta-IN'
+          'en': 'en-IN'
         };
         recognition.lang = langCodeMap[currentLanguage] || 'hi-IN';
         recognition.start();
       } catch (err) {
-        console.warn('Recognition start exception:', err);
-        fallbackPromptQuery();
+        console.warn('Recognition start exception, retrying:', err);
+        try {
+          recognition.abort();
+          setTimeout(() => {
+            try { recognition.start(); } catch (e) { fallbackPromptQuery(); }
+          }, 150);
+        } catch (e) {
+          fallbackPromptQuery();
+        }
       }
     } else {
       fallbackPromptQuery();
@@ -442,20 +465,20 @@
   }
 
   function fallbackPromptQuery() {
-    const promptText = prompt(
-      currentLanguage === 'te' 
-        ? 'రైతు మిత్ర ప్రశ్న (మీ సందేహం రాయండి):'
-        : 'किसान मित्र से सवाल पूछें (अपना सवाल यहाँ लिखें या टोकन नंबर डालें):',
-      'आज का सरकारी भाव क्या है?'
-    );
-    if (promptText) {
-      handleVoiceQuery(promptText);
+    const promptPlaceholder = currentLanguage === 'te' 
+      ? 'కిసాన్ మిత్ర ప్రశ్న (మీ సందేహం రాయండి):' 
+      : (currentLanguage === 'en' ? 'Ask Kisan Mitr a question:' : 'किसान मित्र से पूछें (अपना सवाल यहाँ लिखें):');
+    const promptText = prompt(promptPlaceholder, '');
+    if (promptText && promptText.trim()) {
+      handleVoiceQuery(promptText.trim());
     }
   }
 
   async function handleVoiceQuery(userQuery) {
     if (!userQuery || !userQuery.trim()) return;
 
+    // Interrupt any ongoing speech immediately
+    stopSpeaking();
     updateUIState('thinking');
 
     // Get any active token from session or URL
@@ -469,6 +492,12 @@
       } catch (e) {}
     }
 
+    // Maintain conversation history for follow-up context
+    conversationHistory.push({ role: 'user', content: userQuery });
+    if (conversationHistory.length > 8) {
+      conversationHistory = conversationHistory.slice(-8);
+    }
+
     try {
       const response = await fetch('/api/gemini/voice-assistant', {
         method: 'POST',
@@ -480,7 +509,8 @@
           query: userQuery,
           language: currentLanguage,
           tokenNumber: tokenFromUrl,
-          farmerId: farmerId
+          farmerId: farmerId,
+          history: conversationHistory
         })
       });
 
@@ -500,7 +530,25 @@
 
       if (data && data.success && (data.spokenResponse || data.markdownResponse)) {
         const answer = data.spokenResponse || data.markdownResponse;
-        displayAndSpeakResponse(answer, data.speechLang || 'hi-IN', data.actionUrl, data.matchedToken);
+        
+        // Add to history
+        conversationHistory.push({ role: 'assistant', content: answer });
+        
+        // Auto-adapt language if response returned a specific language
+        if (data.speechLang) {
+          const codePrefix = data.speechLang.split('-')[0];
+          if (['hi', 'te', 'en'].includes(codePrefix) && codePrefix !== currentLanguage) {
+            setAssistantLanguage(codePrefix, false);
+          }
+        }
+
+        displayAndSpeakResponse(
+          answer, 
+          data.speechLang || 'hi-IN', 
+          data.actionUrl, 
+          data.matchedToken, 
+          data.followUpSuggestions
+        );
       } else {
         // Fallback local query intelligence
         const cleanQ = userQuery.toLowerCase();
@@ -510,38 +558,39 @@
         if (cleanQ.includes('token') || cleanQ.includes('status') || cleanQ.includes('టోకెన్') || cleanQ.includes('टोकन')) {
           fallbackMsg = currentLanguage === 'te' 
             ? 'మీ టోకెన్ స్థితిని ట్రాక్ చేయడానికి స్టేటస్ పేజీని చూడండి.' 
-            : 'अपने टोकन की वर्तमान स्थिति देखने के लिए स्टेटस पेज खोलें।';
+            : (currentLanguage === 'en' ? 'To track your token and queue position, please open the Track Status page.' : 'अपने टोकन की स्थिति देखने के लिए कृपया स्टेटस पेज खोलें।');
           targetUrl = '/status.html';
         } else if (cleanQ.includes('center') || cleanQ.includes('కేంద్రం') || cleanQ.includes('मंडी') || cleanQ.includes('केंद्र')) {
           fallbackMsg = currentLanguage === 'te' 
-            ? 'సమీప ధాన్య కొనుగోలు కేంద్రాలు మరియు వాటి వేళలు ఇక్కడ ఉన్నాయి.' 
-            : 'निकटतम खरीद केंद्र और उनकी समय सारणी की जानकारी उपलब्ध है।';
+            ? 'సమీప ప్రభుత్వ ధాన్య కొనుగోలు కేంద్రాలు మరియు వేళలు సెంటర్స్ పేజీలో ఉన్నాయి.' 
+            : (currentLanguage === 'en' ? 'Nearest procurement centers and operational hours are available on the Centers page.' : 'निकटतम सरकारी खरीद केंद्र और समय की जानकारी सेंटर्स पेज पर उपलब्ध है।');
           targetUrl = '/centers.html';
         } else {
           fallbackMsg = currentLanguage === 'te' 
-            ? 'నమస్కారం రైతు సోదరా, మీ కొనుగోలు షెడ్యూల్ మరియు టోకెన్ వివరాలు కిసాన్ సేతు పోర్టల్ లో అందుబాటులో ఉన్నాయి.' 
-            : 'नमस्ते किसान भाई, खरीद केंद्र समय सारणी और टोकन बुकिंग किसान सेतु पर उपलब्ध है।';
+            ? 'నమస్కారం రైతు సోదరా, పంట స్లాట్ బుకింగ్ మరియు వివరాలు కిసాన్ సేతు పోర్టల్ లో అందుబాటులో ఉన్నాయి.' 
+            : (currentLanguage === 'en' ? 'Hello farmer friend. Crop procurement schedules and slot bookings are available on KisanSetu.' : 'नमस्ते किसान भाई, खरीद समय सारणी और स्लॉट बुकिंग किसान सेतु पर उपलब्ध है।');
           targetUrl = '/schedule.html';
         }
 
-        displayAndSpeakResponse(fallbackMsg, currentLanguage === 'te' ? 'te-IN' : 'hi-IN', targetUrl);
+        displayAndSpeakResponse(fallbackMsg, currentLanguage === 'te' ? 'te-IN' : (currentLanguage === 'en' ? 'en-IN' : 'hi-IN'), targetUrl);
       }
     } catch (err) {
-      console.error('Voice assistant fetch error:', err);
+      console.error('Voice assistant request notice:', err);
       const errVoice = currentLanguage === 'te' 
-        ? 'నమస్కారం, కొనుగోలు షెడ్యూల్ చూడటానికి షెడ్యూਲ పేజీ తెరవండి.' 
-        : 'नमस्ते किसान भाई, खरीद समय सारणी देखने के लिए शेड्यूल पेज खोलें।';
-      displayAndSpeakResponse(errVoice, currentLanguage === 'te' ? 'te-IN' : 'hi-IN', '/schedule.html');
+        ? 'నమస్కారం, కొనుగోలు వివరాల కోసం షెడ్యూల్ పేజీ చూడండి.' 
+        : (currentLanguage === 'en' ? 'Procurement details and slot booking are available on the Schedule page.' : 'नमस्ते किसान भाई, खरीद समय सारणी देखने के लिए शेड्यूल पेज खोलें।');
+      displayAndSpeakResponse(errVoice, currentLanguage === 'te' ? 'te-IN' : (currentLanguage === 'en' ? 'en-IN' : 'hi-IN'), '/schedule.html');
     }
   }
 
-  function displayAndSpeakResponse(text, langCode, actionUrl, tokenData) {
+  function displayAndSpeakResponse(text, langCode, actionUrl, tokenData, followUps) {
     lastSpokenText = text;
     lastSpeechLang = langCode;
 
     const responseBox = document.getElementById('kisan-voice-response-box');
     const responseTextEl = document.getElementById('kisan-voice-response-text');
     const actionContainer = document.getElementById('kisan-voice-action-container');
+    const followupsContainer = document.getElementById('kisan-followups-container');
 
     if (responseBox && responseTextEl) {
       responseBox.classList.add('visible');
@@ -560,6 +609,19 @@
           actionContainer.appendChild(actionBtn);
         }
       }
+
+      if (followupsContainer) {
+        followupsContainer.innerHTML = '';
+        if (Array.isArray(followUps) && followUps.length > 0) {
+          followUps.forEach(f => {
+            const chip = document.createElement('button');
+            chip.style.cssText = 'background:#ffffff; border:1px solid #2D6A4F; color:#2D6A4F; padding:4px 10px; border-radius:14px; font-size:12px; font-weight:700; cursor:pointer;';
+            chip.textContent = f;
+            chip.addEventListener('click', () => handleVoiceQuery(f));
+            followupsContainer.appendChild(chip);
+          });
+        }
+      }
     }
 
     speakAloud(text, langCode);
@@ -567,29 +629,34 @@
 
   function speakAloud(text, langCode) {
     if (!('speechSynthesis' in window)) {
-      console.warn('SpeechSynthesis is not supported on this browser.');
       updateUIState('idle');
       return;
     }
 
     stopSpeaking();
 
-    // Clean markdown symbols so TTS reads smoothly
+    // Clean plain spoken text for natural synthesis without awkward punctuation
     const cleanSpeechText = text
       .replace(/[*#_`~[\]()<>]/g, '')
       .replace(/\n+/g, '. ')
       .trim();
 
+    if (!cleanSpeechText) {
+      updateUIState('idle');
+      return;
+    }
+
     currentSpeechUtterance = new SpeechSynthesisUtterance(cleanSpeechText);
-    currentSpeechUtterance.lang = langCode || (currentLanguage === 'te' ? 'te-IN' : 'hi-IN');
-    currentSpeechUtterance.rate = 0.95;
+    currentSpeechUtterance.lang = langCode || (currentLanguage === 'te' ? 'te-IN' : (currentLanguage === 'en' ? 'en-IN' : 'hi-IN'));
+    currentSpeechUtterance.rate = 0.94;
     currentSpeechUtterance.pitch = 1.0;
 
-    // Pick matching natural voice if available
+    // Select natural matching voice if available
     const voices = window.speechSynthesis.getVoices();
     if (voices && voices.length > 0) {
-      const matchedVoice = voices.find(v => v.lang === currentSpeechUtterance.lang) ||
-                           voices.find(v => v.lang.startsWith(currentSpeechUtterance.lang.split('-')[0])) ||
+      const targetLang = currentSpeechUtterance.lang;
+      const matchedVoice = voices.find(v => v.lang === targetLang) ||
+                           voices.find(v => v.lang.startsWith(targetLang.split('-')[0])) ||
                            voices.find(v => v.lang.includes('IN'));
       if (matchedVoice) {
         currentSpeechUtterance.voice = matchedVoice;
@@ -607,7 +674,6 @@
     };
 
     currentSpeechUtterance.onerror = function (e) {
-      console.warn('SpeechSynthesis error:', e);
       isSpeaking = false;
       updateUIState('idle');
     };
@@ -616,10 +682,36 @@
   }
 
   function stopSpeaking() {
-    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
     }
     isSpeaking = false;
+  }
+
+  function setAssistantLanguage(lang, announce) {
+    if (!['hi', 'te', 'en'].includes(lang)) return;
+    currentLanguage = lang;
+    localStorage.setItem('kisansetu_lang', lang);
+
+    document.querySelectorAll('.kisan-voice-lang-pill').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+    });
+
+    renderTopicCards();
+    initSpeechRecognition();
+
+    if (announce) {
+      const greetingMessages = {
+        hi: 'हिन्दी भाषा चुनी गई है। बोलकर पूछें।',
+        te: 'తెలుగు వాయిస్ సహాయం ఎంచుకున్నారు. మాట్లాడండి.',
+        en: 'English voice assistance selected. Please speak.'
+      };
+      const greeting = greetingMessages[lang] || greetingMessages['hi'];
+      const speechCode = lang === 'te' ? 'te-IN' : (lang === 'en' ? 'en-IN' : 'hi-IN');
+      speakAloud(greeting, speechCode);
+    }
   }
 
   function attachEventListeners() {
@@ -627,6 +719,7 @@
     const closeBtn = document.getElementById('kisan-voice-close-btn');
     const overlay = document.getElementById('kisan-voice-modal-overlay');
     const mainMicBtn = document.getElementById('kisan-main-mic-btn');
+    const interruptBtn = document.getElementById('kisan-interrupt-btn');
     const repeatBtn = document.getElementById('kisan-repeat-speech-btn');
     const sendBtn = document.getElementById('kisan-voice-text-send-btn');
     const textInput = document.getElementById('kisan-voice-text-input');
@@ -647,6 +740,13 @@
 
     if (mainMicBtn) {
       mainMicBtn.addEventListener('click', toggleListening);
+    }
+
+    if (interruptBtn) {
+      interruptBtn.addEventListener('click', function () {
+        stopSpeaking();
+        startRecognitionNow();
+      });
     }
 
     if (repeatBtn) {
@@ -677,30 +777,13 @@
       });
     }
 
-    // Language switch pills inside voice modal
+    // Language pills
     document.querySelectorAll('.kisan-voice-lang-pill').forEach(btn => {
       btn.addEventListener('click', function () {
         const lang = this.getAttribute('data-lang');
-        if (!lang) return;
-        currentLanguage = lang;
-        localStorage.setItem('kisansetu_lang', lang);
-
-        document.querySelectorAll('.kisan-voice-lang-pill').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-
-        renderTopicCards();
-        initSpeechRecognition();
-
-        const greetingMessages = {
-          hi: 'हिन्दी भाषा चुनी गई है। बोलकर पूछें।',
-          te: 'తెలుగు వాయిస్ సహాయం ఎంచుకున్నారు. మాట్లాడండి.',
-          en: 'English voice assistance selected. Please speak.',
-          pa: 'ਪੰਜਾਬੀ ਭਾਸ਼ਾ ਚੁਣੀ ਗਈ ਹੈ। ਬੋਲ ਕੇ ਪੁੱਛੋ।',
-          mr: 'मराठी भाषा निवडली आहे. बोला.'
-        };
-        const greeting = greetingMessages[lang] || greetingMessages['hi'];
-        const speechCode = lang === 'te' ? 'te-IN' : (lang === 'en' ? 'en-IN' : 'hi-IN');
-        speakAloud(greeting, speechCode);
+        if (lang) {
+          setAssistantLanguage(lang, true);
+        }
       });
     });
 
@@ -743,12 +826,13 @@
     };
   }
 
-  // Expose global helper so any page button can trigger the voice assistant
+  // Expose global helper so any page button can trigger Kisan Mitr
   window.KisanVoiceAssistant = {
     open: openVoiceModal,
     close: closeVoiceModal,
     speak: speakAloud,
-    ask: handleVoiceQuery
+    ask: handleVoiceQuery,
+    stop: stopSpeaking
   };
 
 })();

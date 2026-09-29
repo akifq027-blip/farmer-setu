@@ -27,12 +27,13 @@ const MSP_RATES: Record<string, { msp: number; season: string; quality_standard:
 
 let genAIClient: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI | null {
-  if (!process.env.GEMINI_API_KEY) {
+  const key = process.env.GEMINI_API_KEY?.trim();
+  if (!key) {
     return null;
   }
   if (!genAIClient) {
     genAIClient = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
+      apiKey: key,
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build'
@@ -45,44 +46,21 @@ function getGeminiClient(): GoogleGenAI | null {
 
 // GET /api/gemini/models - List supported AI models
 geminiVoiceRouter.get('/models', (req, res) => {
-  const hasGemini = Boolean(process.env.GEMINI_API_KEY);
-  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
-
   res.json({
     success: true,
     models: [
       {
-        id: 'gemini-3.7-flash',
-        name: 'Google Gemini 3.7 Flash',
-        engine: 'gemini',
-        provider: 'Google AI',
-        badge: 'Fast & Multilingual',
-        description: 'Advanced reasoning, real-time Indian languages & agricultural intelligence.',
-        isAvailable: hasGemini || true,
-        isDefault: true
-      },
-      {
-        id: 'chatgpt-4o',
-        name: 'ChatGPT (GPT-4o Mini)',
-        engine: 'chatgpt',
-        provider: 'OpenAI',
-        badge: 'Conversational',
-        description: 'OpenAI ChatGPT conversational voice and structured guidance.',
-        isAvailable: hasOpenAI || true,
-        isDefault: false
-      },
-      {
-        id: 'kisan-auto',
-        name: 'KisanSetu Auto-AI',
-        engine: 'auto',
-        provider: 'KisanSetu AI Hub',
-        badge: 'Grounded + Live DB',
-        description: 'Auto-selects the fastest AI engine combined with live mandi queue data.',
+        id: 'kisan-mitr',
+        name: 'Kisan Mitr',
+        engine: 'kisan',
+        provider: 'KisanSetu Support',
+        badge: 'Official Farmer Support',
+        description: 'Warm, respectful, farmer-friendly assistant supporting Hindi, Telugu, and English.',
         isAvailable: true,
-        isDefault: false
+        isDefault: true
       }
     ],
-    activeDefault: 'gemini-3.7-flash'
+    activeDefault: 'kisan-mitr'
   });
 });
 
@@ -174,45 +152,78 @@ geminiVoiceRouter.post('/voice-assistant', async (req, res) => {
       ]
     };
 
-    // System prompt for Indian Agricultural Voice Assistant
+    // System prompt for Kisan Mitr Digital Farmer Assistant
     const systemInstruction = `
-You are "Kisan Mitra" (किसान मित्र / రైతు మిత్ర), an expert, ultra-friendly, respectful Agricultural AI Voice & Knowledge Assistant for KisanSetu.
-Your audience includes Indian farmers, many of whom prefer listening to spoken audio over reading text.
+You are "Kisan Mitr" (किसान मित्र / రైతు మిత్ర), an expert, warm, respectful, and farmer-friendly digital support assistant for the KisanSetu Farmer Procurement Portal.
 
-CORE OPERATIONAL RULES:
-1. LANGUAGE: Respond in the EXACT SAME LANGUAGE and dialect of the query (e.g. Hindi, Telugu, English, Punjabi, Marathi, Tamil, Kannada, Bengali, Gujarati). If language preference is explicitly specified as '${language}', prioritize that language.
-2. SPOKEN AUDIO COMPATIBILITY: Keep your spoken answer natural, warm, reassuring, and easy to pronounce by a speech synthesizer (TTS). Avoid robotic acronyms.
-3. LIVE MANDI DATA ACCURACY: Always quote real numbers from the LIVE SYSTEM CONTEXT provided:
-   - For Tokens/Queue: Quote the token number, crop, status, farmers ahead in queue, approximate wait time, and counter advice.
-   - For MSP: Quote the official Minimum Support Price (MSP) in ₹ per quintal and mention the moisture limit (e.g., Wheat moisture < 12%, Paddy < 17%).
-   - For Slot Booking: Explain in 3 simple steps how to pick crop, date, vehicle number, and get instant digital token.
-   - For Centers: State opening hours (typically 8:00 AM - 6:00 PM) and center contact number.
-   - For Documents: Mention the 3 essential papers (Aadhaar, Land Passbook, Bank Passbook for DBT).
-4. CROP DOCTOR & ADVISORY: If asked about farming advice (e.g. drying grain, pest prevention, storage, rain precautions), provide safe, practical farmer-first advice.
-5. CLEAN TEXT: In the plain spoken response, do NOT use Markdown formatting like asterisks (**), hashtags (###), or code fences, because TTS synthesizers read those aloud awkwardly. Keep punctuation natural with commas and periods for speech pauses.
+BRAND IDENTITY (STRICT MANDATORY REQUIREMENT):
+- Your name is exclusively "Kisan Mitr".
+- NEVER mention or say "Gemini", "Gemini Voice", "Google Gemini", "ChatGPT", "OpenAI", or any other underlying AI system.
+- Always present yourself purely as Kisan Mitr, the official farmer procurement assistant for KisanSetu.
+
+VOICE PERSONALITY & SPEAKING STYLE:
+- Natural, warm, respectful, patient, helpful, clear, and professional.
+- Treat every farmer with deep respect and warmth.
+- Never robotic. Never unnecessarily verbose.
+- Keep sentences short so the farmer can easily follow when listening to the audio.
+- Use natural pauses with commas and periods.
+- Avoid repetitive filler openings such as "Sure!", "Certainly!", "Of course!", "According to the procurement management database...". Instead, give direct, farmer-friendly answers.
+- For instructions, give at most 3 short, easy sequential steps (e.g. "First, open Book Slot. Then select your crop and preferred date. Finally, confirm to get your instant token.").
+
+LANGUAGE RULES:
+- Automatically respond in the EXACT language the farmer speaks:
+  * If the farmer speaks or writes in Telugu -> Respond in natural, warm Telugu.
+  * If the farmer speaks or writes in Hindi -> Respond in natural, respectful Hindi.
+  * If the farmer speaks or writes in English -> Respond in simple, clear English.
+- If the language preference is explicitly specified as '${language}', and the farmer's query is language-neutral, use '${language}'.
+- If the language is completely unclear, briefly ask which language they prefer (English, Hindi, or Telugu).
+- Use simple, natural conversational vocabulary familiar to farmers rather than complicated bureaucratic jargon.
+
+TOPICS & QUESTIONS YOU HANDLE:
+- Farmer registration & login on KisanSetu (with mobile number, Aadhaar, land record ID).
+- Booking drop-off slots for crops (Paddy, Wheat, Cotton, Mustard, Maize, Soybean, Moong, Groundnut).
+- Token numbers & live queue position tracking.
+- Procurement schedules, dates, and operational hours.
+- Procurement centers list, district locations, and contact phone numbers.
+- Required documents (Aadhaar Card, Pattadar Passbook / Land Record copy, Aadhaar-seeded Bank Passbook for direct DBT).
+- Official Minimum Support Price (MSP) government rates and moisture limit standards.
+- Payment / DBT status (MSP payment credited directly into farmer's bank account via DBT within 48 to 72 hours).
+- Important announcements and alerts.
+- Portal navigation and step-by-step assistance.
+
+GROUND TRUTH & DATA INTEGRITY (NEVER FABRICATE):
+- Quote real facts and numbers ONLY from the LIVE SYSTEM CONTEXT provided.
+- NEVER fabricate, invent, or guess token numbers, queue positions, appointment dates, center availability, payment status, or farmer records.
+- If a requested token number or record is not found in the live context, clearly and politely inform the farmer that the record was not found and ask them to check their token number or book a new slot.
+- For MSP rates and moisture limits, quote the exact numbers from the context.
+
+FORMATTING:
+- Plain text only. Do NOT use markdown asterisks (**), hashtags (###), bullet symbols, or code fences, because speech synthesizers read those characters aloud.
 `;
 
     // Detect speech synthesis language code
     let speechLang = 'hi-IN';
     const lowerQuery = cleanQuery.toLowerCase();
-    if (language === 'te' || /[\u0C00-\u0C7F]/.test(cleanQuery) || lowerQuery.includes('telugu') || lowerQuery.includes('eppudu') || lowerQuery.includes('ధర') || lowerQuery.includes('టోకెన్')) {
+    
+    // Check Telugu: Telugu script or common words/romanized phrases
+    const isTelugu = /[\u0C00-\u0C7F]/.test(cleanQuery) ||
+      language === 'te' ||
+      /\b(telugu|eppudu|dhara|dharalu|raithu|rythu|panta|vari|godhumalu|ekkada|kendra|kendram|sankhya|patralu|kaavali|chesukovali|slat|namaskaram|cheppandi)\b/i.test(lowerQuery);
+
+    // Check Hindi: Devanagari script or common words/romanized phrases
+    const isHindi = /[\u0900-\u097F]/.test(cleanQuery) ||
+      language === 'hi' ||
+      /\b(kisan|namaste|bhav|gehu|dhan|kaha|kab|mera|kaise|kitna|aaj|mandi|bataye|bhai|sarkari|paisa|khata|kagaz|dastavez|tulayi|tarikh)\b/i.test(lowerQuery);
+
+    // Check English
+    const isEnglish = language === 'en' || (!/[\u0900-\u0C7F]/.test(cleanQuery) && !isTelugu && !isHindi && /^[a-zA-Z0-9\s.,?!'-]+$/.test(cleanQuery));
+
+    if (isTelugu) {
       speechLang = 'te-IN';
-    } else if (language === 'hi' || /[\u0900-\u097F]/.test(cleanQuery) || lowerQuery.includes('namaste') || lowerQuery.includes('kisan') || lowerQuery.includes('bhav') || lowerQuery.includes('gehu') || lowerQuery.includes('भाव')) {
-      speechLang = 'hi-IN';
-    } else if (language === 'pa' || /[\u0A00-\u0A7F]/.test(cleanQuery) || lowerQuery.includes('sat sri akaal') || lowerQuery.includes('kanak')) {
-      speechLang = 'pa-IN';
-    } else if (language === 'mr' || lowerQuery.includes('namaskar') || lowerQuery.includes('bhav kay') || lowerQuery.includes('शेतकरी')) {
-      speechLang = 'mr-IN';
-    } else if (language === 'ta' || /[\u0B80-\u0BFF]/.test(cleanQuery)) {
-      speechLang = 'ta-IN';
-    } else if (language === 'kn' || /[\u0C80-\u0CFF]/.test(cleanQuery)) {
-      speechLang = 'kn-IN';
-    } else if (language === 'gu' || /[\u0A80-\u0AFF]/.test(cleanQuery)) {
-      speechLang = 'gu-IN';
-    } else if (language === 'bn' || /[\u0980-\u09FF]/.test(cleanQuery)) {
-      speechLang = 'bn-IN';
-    } else if (language === 'en' || /^[a-zA-Z0-9\s.,?!'-]+$/.test(cleanQuery)) {
+    } else if (isEnglish) {
       speechLang = 'en-IN';
+    } else {
+      speechLang = 'hi-IN';
     }
 
     // Determine Action Type for UI widgets
@@ -232,14 +243,14 @@ CORE OPERATIONAL RULES:
       actionType = 'BOOK_SLOT';
       actionUrl = `/request.html`;
       actionTitle = 'फसल बेचने का स्लॉट बुक करें';
-    } else if (lowerQuery.includes('center') || lowerQuery.includes('mandi') || lowerQuery.includes('केंद्र') || lowerQuery.includes('కేంద్రం')) {
-      actionType = 'CENTER_INFO';
-      actionUrl = `/centers.html`;
-      actionTitle = 'नजदीकी सरकारी खरीद केंद्र सूची';
     } else if (lowerQuery.includes('document') || lowerQuery.includes('kagas') || lowerQuery.includes('कागज') || lowerQuery.includes('पंजीकरण') || lowerQuery.includes('పత్రాలు')) {
       actionType = 'DOCUMENT_INFO';
       actionUrl = `/help.html`;
       actionTitle = 'जरूरी दस्तावेज व सत्यापन सहायता';
+    } else if (lowerQuery.includes('center') || lowerQuery.includes('mandi') || lowerQuery.includes('केंद्र') || lowerQuery.includes('కేంద్రం')) {
+      actionType = 'CENTER_INFO';
+      actionUrl = `/centers.html`;
+      actionTitle = 'नजदीकी सरकारी खरीद केंद्र सूची';
     }
 
     // Strategy 1: OpenAI ChatGPT (if selected and configured)
@@ -286,14 +297,14 @@ CORE OPERATIONAL RULES:
               spokenResponse: cleanSpokenText(gptText),
               markdownResponse: gptText,
               speechLang,
-              modelUsed: 'ChatGPT (GPT-4o Mini)',
-              modelId: 'chatgpt-4o',
+              modelUsed: 'Kisan Mitr',
+              modelId: 'kisan-mitr',
               actionType,
               actionUrl,
               actionTitle,
               matchedToken: matchedTokenInfo,
               mspData: MSP_RATES,
-              followUpSuggestions: getFollowUpSuggestions(cleanQuery, language)
+              followUpSuggestions: getFollowUpSuggestions(cleanQuery, speechLang.split('-')[0])
             });
           }
         }
@@ -302,27 +313,27 @@ CORE OPERATIONAL RULES:
       }
     }
 
-    // Strategy 2: Google Gemini 3.7 Flash (Primary official engine via @google/genai)
+    // Strategy 2: Google Gemini 3.8 Flash (Primary official engine via @google/genai)
     const ai = getGeminiClient();
     if (ai) {
       try {
         // Construct conversation contents with system instruction and history
         let promptText = `
 FARMER'S QUESTION: "${cleanQuery}"
-LANGUAGE PREFERENCE: ${language}
+SPOKEN LANGUAGE PREFERENCE: ${speechLang}
 
-LIVE MANDI & PROCUREMENT GROUND TRUTH:
+LIVE MANDI & PROCUREMENT GROUND TRUTH CONTEXT (DO NOT FABRICATE DATA OUTSIDE THIS):
 ${JSON.stringify(liveContext, null, 2)}
 `;
 
-        // If history is provided, include the recent dialogue context
+        // If history is provided, include the recent dialogue context for follow-up continuity
         if (Array.isArray(history) && history.length > 0) {
-          const recentHistoryText = history.slice(-4).map(h => `${h.role === 'user' ? 'Farmer' : 'Assistant'}: ${h.content}`).join('\n');
-          promptText = `CONVERSATION HISTORY:\n${recentHistoryText}\n\n` + promptText;
+          const recentHistoryText = history.slice(-6).map(h => `${h.role === 'user' ? 'Farmer' : 'Kisan Mitr'}: ${h.content}`).join('\n');
+          promptText = `PREVIOUS CONVERSATION CONTEXT (FOR FOLLOW-UP UNDERSTANDING):\n${recentHistoryText}\n\n` + promptText;
         }
 
         const response = await ai.models.generateContent({
-          model: 'gemini-3.7-flash',
+          model: 'gemini-3.8-flash',
           contents: promptText,
           config: {
             systemInstruction: systemInstruction,
@@ -337,14 +348,14 @@ ${JSON.stringify(liveContext, null, 2)}
             spokenResponse: cleanSpokenText(geminiText),
             markdownResponse: geminiText.trim(),
             speechLang,
-            modelUsed: 'Google Gemini 3.7 Flash',
-            modelId: 'gemini-3.7-flash',
+            modelUsed: 'Kisan Mitr',
+            modelId: 'kisan-mitr',
             actionType,
             actionUrl,
             actionTitle,
             matchedToken: matchedTokenInfo,
             mspData: MSP_RATES,
-            followUpSuggestions: getFollowUpSuggestions(cleanQuery, language)
+            followUpSuggestions: getFollowUpSuggestions(cleanQuery, speechLang.split('-')[0])
           });
         }
       } catch (geminiErr: any) {
@@ -353,20 +364,20 @@ ${JSON.stringify(liveContext, null, 2)}
     }
 
     // Strategy 3: Grounded Intelligent Fallback Engine
-    const fallback = generateIntelligentFallback(cleanQuery, language, matchedTokenInfo, allCenters, allSchedules);
+    const fallback = generateIntelligentFallback(cleanQuery, speechLang.split('-')[0], matchedTokenInfo, allCenters, allSchedules);
     return res.json({
       success: true,
       spokenResponse: fallback.text,
       markdownResponse: fallback.text,
       speechLang: fallback.lang || speechLang,
-      modelUsed: 'KisanSetu Intelligent Grounding',
-      modelId: 'kisan-auto',
+      modelUsed: 'Kisan Mitr',
+      modelId: 'kisan-mitr',
       actionType,
       actionUrl,
       actionTitle,
       matchedToken: matchedTokenInfo,
       mspData: MSP_RATES,
-      followUpSuggestions: getFollowUpSuggestions(cleanQuery, language)
+      followUpSuggestions: getFollowUpSuggestions(cleanQuery, speechLang.split('-')[0])
     });
 
   } catch (error: any) {
@@ -388,11 +399,9 @@ geminiVoiceRouter.get('/quick-voice-prompts', (req, res) => {
       title_hi: 'आज का सरकारी भाव (MSP)',
       title_te: 'ఈరోజు మద్దతు ధరలు (MSP)',
       title_en: "Today's MSP Crop Rates",
-      title_pa: 'ਅੱਜ ਦਾ ਸਰਕਾਰੀ ਰੇਟ (MSP)',
       query_hi: 'आज का सरकारी समर्थन मूल्य (MSP) और गेहूं व धान का रेट क्या है?',
       query_te: 'ఈరోజు వరి మరియు గోధుమల ప్రభుత్వ మద్దతు ధరలు ఎంత?',
-      query_en: 'What are the current government MSP rates for Wheat, Paddy and Mustard?',
-      query_pa: 'ਕਣਕ ਅਤੇ ਝੋਨੇ ਦਾ ਅੱਜ ਦਾ ਸਰਕਾਰੀ ਸਮਰਥਨ ਮੁੱਲ ਕੀ ਹੈ?'
+      query_en: 'What are the current government MSP rates for Wheat, Paddy and Mustard?'
     },
     {
       id: 'token',
@@ -400,11 +409,9 @@ geminiVoiceRouter.get('/quick-voice-prompts', (req, res) => {
       title_hi: 'मेरा टोकन व लाइव कतार',
       title_te: 'నా టోకెన్ & లైవ్ క్యూ',
       title_en: 'My Token Queue Status',
-      title_pa: 'ਮੇਰਾ ਟੋਕਨ ਅਤੇ ਕਤਾਰ',
       query_hi: 'मेरा टोकन नंबर A-104 का लाइव स्टेटस और कतार में नंबर बताएं',
       query_te: 'నా టోకెన్ A-104 లైవ్ స్టేటస్ చెప్పండి',
-      query_en: 'Tell me the live queue position and wait time for Token A-104',
-      query_pa: 'ਮੇਰੇ ਟੋਕਨ A-104 ਦਾ ਲਾਈਵ ਸਟੇਟਸ ਦੱਸੋ'
+      query_en: 'Tell me the live queue position and wait time for Token A-104'
     },
     {
       id: 'slot',
@@ -412,11 +419,9 @@ geminiVoiceRouter.get('/quick-voice-prompts', (req, res) => {
       title_hi: 'फसल बेचने का स्लॉट बुक करें',
       title_te: 'స్లాట్ ఎలా బుక్ చేయాలి?',
       title_en: 'Book Drop-off Slot',
-      title_pa: 'ਸਲਾਟ ਕਿਵੇਂ ਬੁੱਕ ਕਰਨਾ ਹੈ?',
       query_hi: 'फसल बेचने के लिए ऑनलाइन टोकन स्लॉट कैसे बुक करें?',
       query_te: 'ధాన్యం సేకరణ కోసం స్లాట్ ఎలా బుక్ చేయాలి?',
-      query_en: 'How do I book a crop procurement drop-off slot online?',
-      query_pa: 'ਫਸਲ ਵੇਚਣ ਲਈ ਆਨਲਾਈਨ ਟੋਕਨ ਸਲਾਟ ਕਿਵੇਂ ਬੁੱਕ ਕਰੀਏ?'
+      query_en: 'How do I book a crop procurement drop-off slot online?'
     },
     {
       id: 'documents',
@@ -424,11 +429,9 @@ geminiVoiceRouter.get('/quick-voice-prompts', (req, res) => {
       title_hi: 'मंडी में क्या कागज साथ ले जाएं?',
       title_te: 'కేంద్రానికి ఏ పత్రాలు కావాలి?',
       title_en: 'Required Documents',
-      title_pa: 'ਮੰਡੀ ਵਿੱਚ ਕਿਹੜੇ ਕਾਗਜ਼ ਲੈ ਕੇ ਜਾਣੇ ਹਨ?',
       query_hi: 'खरीद केंद्र पर क्या क्या दस्तावेज और कागज साथ ले जाने होंगे?',
       query_te: 'కొనుగోలు కేంద్రానికి ఏ పత్రాలు తీసుకురావాలి?',
-      query_en: 'What documents do I need to bring to the procurement center?',
-      query_pa: 'ਖਰੀਦ ਕੇਂਦਰ ਵਿੱਚ ਕਿਹੜੇ ਦਸਤਾਵੇਜ਼ ਲੈ ਕੇ ਜਾਣੇ ਪੈਣਗੇ?'
+      query_en: 'What documents do I need to bring to the procurement center?'
     },
     {
       id: 'centers',
@@ -436,11 +439,9 @@ geminiVoiceRouter.get('/quick-voice-prompts', (req, res) => {
       title_hi: 'नजदीकी केंद्र व समय',
       title_te: 'సమీప కేంద్రం & వేళలు',
       title_en: 'Center Timings & Contact',
-      title_pa: 'ਨੇੜਲਾ ਕੇਂਦਰ ਅਤੇ ਸਮਾਂ',
       query_hi: 'सरकारी खरीद केंद्र का समय क्या है और हेल्पलाइन नंबर क्या है?',
       query_te: 'సమీప కేంద్రం పని వేళలు మరియు ఫోన్ నంబర్ ఏమిటి?',
-      query_en: 'What are the procurement center operational hours and helpline contact?',
-      query_pa: 'ਸਰਕਾਰੀ ਖਰੀਦ ਕੇਂਦਰ ਦਾ ਸਮਾਂ ਅਤੇ ਹੈਲਪਲਾਈਨ ਨੰਬਰ ਕੀ ਹੈ?'
+      query_en: 'What are the procurement center operational hours and helpline contact?'
     },
     {
       id: 'moisture',
@@ -448,11 +449,9 @@ geminiVoiceRouter.get('/quick-voice-prompts', (req, res) => {
       title_hi: 'नमी (Moisture) के सरकारी नियम',
       title_te: 'తేమ శాతం నిబంధనలు',
       title_en: 'Moisture Rules for Crops',
-      title_pa: 'ਨਮੀ (Moisture) ਦੇ ਨਿਯਮ',
       query_hi: 'गेहूं और धान में नमी कितने प्रतिशत तक स्वीकार की जाती है?',
       query_te: 'వరి మరియు గోధుమలలో తేమ శాతం ఎంత ఉండాలి?',
-      query_en: 'What is the maximum allowed moisture percentage for wheat and paddy?',
-      query_pa: 'ਕਣਕ ਅਤੇ ਝੋਨੇ ਵਿੱਚ ਨਮੀ ਦੀ ਕਿੰਨੀ ਹੱਦ ਮਨਜ਼ੂਰ ਹੈ?'
+      query_en: 'What is the maximum allowed moisture percentage for wheat and paddy?'
     }
   ];
 
@@ -469,7 +468,7 @@ function cleanSpokenText(text: string): string {
     .trim();
 }
 
-// Helper: Provide 2-3 dynamic follow up suggestions based on user query
+// Helper: Provide 2-3 dynamic follow up suggestions based on user query and language
 function getFollowUpSuggestions(query: string, lang: string): string[] {
   const q = query.toLowerCase();
   
@@ -481,6 +480,16 @@ function getFollowUpSuggestions(query: string, lang: string): string[] {
       return ['కేంద్రం సమయం ఏమిటి?', 'ఏ పత్రాలు తీసుకురావాలి?', 'ఈరోజు మద్దతు ధర ఎంత?'];
     }
     return ['ఈరోజు మద్దతు ధర ఎంత?', 'స్లాట్ ఎలా బుక్ చేయాలి?', 'సమీప కేంద్రం ఎక్కడ ఉంది?'];
+  }
+
+  if (lang === 'en' || /^[a-zA-Z0-9\s.,?!'-]+$/.test(query)) {
+    if (q.includes('rate') || q.includes('price') || q.includes('msp')) {
+      return ['How to book a drop-off slot?', 'What documents are required?', 'What is the moisture limit?'];
+    }
+    if (q.includes('token') || q.includes('status') || q.includes('queue')) {
+      return ['Center hours and address', 'When will DBT payment arrive?', "Today's government MSP rate"];
+    }
+    return ["What is today's MSP rate?", 'How to book a slot?', 'Where is the nearest center?'];
   }
 
   // Hindi / default
@@ -506,11 +515,16 @@ function generateIntelligentFallback(
 ): { text: string; lang: string } {
   const q = query.toLowerCase();
 
-  // Telugu language queries
-  if (lang === 'te' || /[\u0C00-\u0C7F]/.test(query) || q.includes('telugu') || q.includes('dharalu') || q.includes('token') || q.includes('mariyu')) {
+  // Telugu language
+  if (lang === 'te' || /[\u0C00-\u0C7F]/.test(query) || q.includes('telugu') || q.includes('dharalu') || q.includes('mariyu')) {
     if (tokenInfo) {
       return {
-        text: `నమస్కారం రైతు సోదరా. మీ టోకెన్ నంబర్ ${tokenInfo.token_number}. పంట ${tokenInfo.crop_name}, పరిమాణం ${tokenInfo.quantity_quintals} క్వింటాళ్లు. ప్రస్తుత స్థితి: ${tokenInfo.status}. మీ ముందు ${tokenInfo.queue_position} మంది రైతులు ఉన్నారు. వేచి ఉండే సమయం సుమారు ${tokenInfo.estimated_waiting_minutes} నిమిషాలు. కేంద్రం: ${tokenInfo.center_name}.`,
+        text: `నమస్కారం రైతు సోదరా. మీ టోకెన్ నంబర్ ${tokenInfo.token_number}. పంట ${tokenInfo.crop_name}, పరిమాణం ${tokenInfo.quantity_quintals} క్వింటాళ్లు. ప్రస్తుత స్థితి: ${tokenInfo.status}. మీ ముందు ${tokenInfo.queue_position} మంది రైతులు ఉన్నారు. వేచి ఉండే సమయం సుమారు ${tokenInfo.estimated_waiting_minutes} నిమిషాలు. కొనుగోలు కేంద్రం: ${tokenInfo.center_name}.`,
+        lang: 'te-IN'
+      };
+    } else if (q.includes('token') || q.includes('టోకెన్')) {
+      return {
+        text: 'నమస్కారం రైతు సోదరా. మీరు పేర్కొన్న టోకెన్ వివరాలు రికార్డులో లభించలేదు. దయచేసి మీ టోకెన్ నంబర్ సరిచూసుకోండి లేదా కొత్త స్లాట్ బుక్ చేసుకోండి.',
         lang: 'te-IN'
       };
     }
@@ -526,16 +540,76 @@ function generateIntelligentFallback(
         lang: 'te-IN'
       };
     }
+    if (q.includes('slot') || q.includes('బుక్') || q.includes('book')) {
+      return {
+        text: 'పంట అమ్మకానికి స్లాట్ బుక్ చేయడం చాలా సులభం. హోమ్ పేజీలో బుక్ స్లాట్ ఎంచుకోండి, పంట మరియు తేదీని ఎంచుకోండి, మీ వాహనం నంబర్ నమోదు చేసి డిజిటల్ టోకెన్ పొందండి.',
+        lang: 'te-IN'
+      };
+    }
+    if (q.includes('center') || q.includes('కేంద్రం') || q.includes('వేళలు') || q.includes('సమయం')) {
+      return {
+        text: 'ప్రభుత్వ కొనుగోలు కేంద్రాలు ప్రతిరోజూ ఉదయం 8:00 నుండి సాయంత్రం 6:00 వరకు పనిచేస్తాయి. కేంద్రాల పూర్తి వివరాల కోసం సెంటర్స్ పేజీ చూడండి.',
+        lang: 'te-IN'
+      };
+    }
     return {
-      text: 'నమస్కారం రైతు మిత్ర. కిసాన్ సేతు ద్వారా మీరు పంట స్లాట్ బుక్ చేసుకోవచ్చు, లైవ్ టోకెన్ ట్రాక్ చేయవచ్చు, మరియు మద్దతు ధరలు తెలుసుకోవచ్చు. మీ టోకెన్ నంబర్ లేదా సందేహాన్ని మాట్లాడండి.',
+      text: 'నమస్కారం రైతు మిత్ర. కిసాన్ సేతు ద్వారా మీరు పంట స్లాట్ బుక్ చేసుకోవచ్చు, లైవ్ టోకెన్ ట్రాక్ చేయవచ్చు, మరియు మద్దతు ధరలు తెలుసుకోవచ్చు. మీ సందేహాన్ని మాట్లాడండి.',
       lang: 'te-IN'
     };
   }
 
-  // Hindi / default queries
+  // English language
+  if (lang === 'en') {
+    if (tokenInfo) {
+      return {
+        text: `Hello farmer friend. Your token number is ${tokenInfo.token_number}. Crop: ${tokenInfo.crop_name}, quantity: ${tokenInfo.quantity_quintals} quintals. Current status is ${tokenInfo.status}. There are ${tokenInfo.queue_position} farmers ahead of you, and estimated waiting time is approximately ${tokenInfo.estimated_waiting_minutes} minutes at ${tokenInfo.center_name}.`,
+        lang: 'en-IN'
+      };
+    } else if (q.includes('token') || q.includes('queue') || q.includes('status')) {
+      return {
+        text: 'Hello. The requested token record was not found in our live database. Please verify your token number or check the Track Status page.',
+        lang: 'en-IN'
+      };
+    }
+    if (q.includes('rate') || q.includes('msp') || q.includes('price')) {
+      return {
+        text: 'Current official government MSP rates per quintal are: Common Paddy ₹2,300, Grade-A Paddy ₹2,320, Wheat ₹2,275, Mustard ₹5,650, and Cotton ₹7,121. Payment is transferred directly to your bank account via DBT.',
+        lang: 'en-IN'
+      };
+    }
+    if (q.includes('document') || q.includes('paper') || q.includes('certificate')) {
+      return {
+        text: 'Please bring these 3 essential documents to the procurement center: 1. Original Aadhaar Card for gate verification, 2. Land Record / Pattadar Passbook copy, 3. Aadhaar-seeded Bank Passbook for direct payment.',
+        lang: 'en-IN'
+      };
+    }
+    if (q.includes('slot') || q.includes('book')) {
+      return {
+        text: 'Booking a procurement slot takes 3 simple steps: First, click Book Drop-off Slot. Second, select your crop, quantity, and preferred date. Third, enter your transport vehicle number and download your digital token.',
+        lang: 'en-IN'
+      };
+    }
+    if (q.includes('center') || q.includes('timing') || q.includes('hours') || q.includes('location')) {
+      return {
+        text: 'Procurement centers are open daily from 8:00 AM to 6:00 PM. You can find your nearest center address and contact details on the Centers page.',
+        lang: 'en-IN'
+      };
+    }
+    return {
+      text: 'Hello farmer friend. I am Kisan Mitr, your dedicated digital procurement assistant. You can ask me about your token number, live queue status, government MSP rates, center timings, or required documents.',
+      lang: 'en-IN'
+    };
+  }
+
+  // Hindi language / default
   if (tokenInfo) {
     return {
       text: `नमस्ते किसान भाई। आपका टोकन नंबर ${tokenInfo.token_number} है। फसल ${tokenInfo.crop_name}, मात्रा ${tokenInfo.quantity_quintals} क्विंटल है। वर्तमान स्थिति ${tokenInfo.status} है। आपसे आगे ${tokenInfo.queue_position} किसान कतार में हैं, और अनुमानित प्रतीक्षा समय लगभग ${tokenInfo.estimated_waiting_minutes} मिनट है। आपका खरीद केंद्र ${tokenInfo.center_name} है।`,
+      lang: 'hi-IN'
+    };
+  } else if (q.includes('token') || q.includes('टोकन') || q.includes('status')) {
+    return {
+      text: 'नमस्ते किसान भाई। आपका टोकन नंबर रिकॉर्ड में नहीं मिला। कृपया अपना टोकन नंबर जांचें या स्थिति पेज पर फिर से देखें।',
       lang: 'hi-IN'
     };
   }
@@ -569,7 +643,7 @@ function generateIntelligentFallback(
   }
 
   return {
-    text: 'नमस्ते किसान भाई। मैं आपका किसान मित्र वॉइस असिस्टेंट हूँ। आप बोलकर अपना टोकन नंबर, आज का सरकारी भाव, खरीद केंद्र का समय, या जरूरी दस्तावेजों की जानकारी कभी भी पूछ सकते हैं।',
+    text: 'नमस्ते किसान भाई। मैं आपका किसान मित्र डिजिटल असिस्टेंट हूँ। आप बोलकर अपना टोकन नंबर, आज का सरकारी भाव, खरीद केंद्र का समय, या जरूरी दस्तावेजों की जानकारी कभी भी पूछ सकते हैं।',
     lang: 'hi-IN'
   };
 }
