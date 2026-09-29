@@ -11,8 +11,7 @@ import { schedulesRouter } from './backend/routes/schedules.js';
 import { requestsRouter } from './backend/routes/requests.js';
 import { announcementsRouter } from './backend/routes/announcements.js';
 import { adminRouter } from './backend/routes/admin.js';
-import { geminiVoiceRouter } from './backend/routes/geminiVoice.js';
-import { setupGeminiLiveWebSocket } from './backend/services/geminiLiveService.js';
+import { vapiRouter } from './backend/routes/vapi.js';
 import { store } from './backend/store.js';
 
 async function startServer() {
@@ -21,9 +20,6 @@ async function startServer() {
   const isProduction = process.env.NODE_ENV === 'production';
 
   const httpServer = http.createServer(app);
-
-  // Setup Gemini Live Real-time WebSocket Service
-  setupGeminiLiveWebSocket(httpServer);
 
   // Global Middlewares
   app.use(cors());
@@ -67,7 +63,7 @@ async function startServer() {
   app.use('/api/requests', requestsRouter);
   app.use('/api/announcements', announcementsRouter);
   app.use('/api/admin', adminRouter);
-  app.use('/api/gemini', geminiVoiceRouter);
+  app.use('/api/vapi', vapiRouter);
 
   // Serve static files from /public
   const publicDir = path.join(process.cwd(), 'public');
