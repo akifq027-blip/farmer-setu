@@ -205,9 +205,7 @@
   // ---------------------------------------------------------------------------
   // 2. VAPI CLIENT INITIALIZATION & EVENT HANDLERS
   // ---------------------------------------------------------------------------
-  async function getOrInitVapi() {
-    if (vapi) return vapi;
-
+  async function initFreshVapi() {
     await loadVapiSDK();
     await fetchVapiConfig();
 
@@ -236,6 +234,7 @@
       isUserSpeaking = false;
       updateUIState('ended');
       resetWaveVisualizer();
+      vapi = null;
     });
 
     // Event: Speech Start (Kisan Mitr speaking)
@@ -290,13 +289,36 @@
       }
     });
 
-    // Event: Error
+    // Event: Error Handling (Distinguish normal meeting completion from fatal errors)
     vapi.on('error', (err) => {
-      console.error('Vapi client error:', err);
+      const errStr = (JSON.stringify(err || '') + ' ' + (err?.error?.message?.msg || '') + ' ' + (err?.error?.msg || '') + ' ' + (err?.message || '')).toLowerCase();
+
+      // Normal Daily room teardown / meeting exit events should not display red error state
+      const isCallEndedNormally =
+        errStr.includes('room was deleted') ||
+        errStr.includes('meeting has ended') ||
+        errStr.includes('no-room') ||
+        errStr.includes('ejected') ||
+        errStr.includes('left-meeting') ||
+        errStr.includes('already-started');
+
+      if (isCallEndedNormally) {
+        console.log('ℹ️ Kisan Mitr call finished or room teardown:', err);
+        isCallActive = false;
+        isAssistantSpeaking = false;
+        isUserSpeaking = false;
+        updateUIState('ended');
+        resetWaveVisualizer();
+        vapi = null;
+        return;
+      }
+
+      console.warn('Vapi client notice:', err);
       isCallActive = false;
       isAssistantSpeaking = false;
       updateUIState('error');
       resetWaveVisualizer();
+      vapi = null;
     });
 
     return vapi;
@@ -308,47 +330,75 @@
   async function startVapiAssistant(initialQuery) {
     try {
       updateUIState('thinking', 'Connecting to Kisan Mitr...');
-      const client = await getOrInitVapi();
 
-      // Overrides for Kisan Mitr farmer context
-      const assistantOverrides = {
-        variableValues: {
-          current_language: currentLanguage,
-          platform: 'KisanSetu Farmer Procurement Portal',
-          today_date: new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })
+      // 1. Proactive microphone permission check
+      // Prompts user before Daily.co room creation to prevent the 15-second join timeout
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          const testStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          testStream.getTracks().forEach(t => t.stop());
+        } catch (micErr) {
+          console.warn('Microphone permission check denied or unavailable:', micErr);
+          updateUIState('error', 'माइक की अनुमति आवश्यक है (Microphone permission required)');
+          return;
         }
-      };
+      }
 
-      await client.start(vapiAssistantId, assistantOverrides);
+      // 2. Ensure previous call session is completely stopped
+      if (vapi) {
+        try {
+          await vapi.stop();
+        } catch (e) {}
+        vapi = null;
+      }
 
-      // If user clicked a topic prompt, send it to assistant
+      // 3. Initialize fresh Vapi Web SDK instance
+      const client = await initFreshVapi();
+
+      // 4. Start assistant call cleanly
+      await client.start(vapiAssistantId);
+      isCallActive = true;
+      updateUIState('listening');
+
+      // If user clicked a topic prompt, send it
       if (initialQuery) {
         setTimeout(() => {
           try {
             if (client.say) {
-              // Or send message to trigger immediate conversation
+              // Can optionally send initial topic
             }
           } catch (e) {}
         }, 1200);
       }
     } catch (err) {
+      const errStr = (String(err?.message || '') + ' ' + JSON.stringify(err || '')).toLowerCase();
+      if (errStr.includes('room was deleted') || errStr.includes('meeting has ended') || errStr.includes('no-room')) {
+        updateUIState('ended');
+        vapi = null;
+        return;
+      }
       console.error('Failed to start Kisan Mitr Vapi call:', err);
       updateUIState('error');
+      vapi = null;
     }
   }
 
-  function stopVapiAssistant() {
-    try {
-      if (vapi) {
-        vapi.stop();
-      }
-    } catch (err) {
-      console.warn('Error stopping Vapi call:', err);
-    }
+  async function stopVapiAssistant() {
     isCallActive = false;
     isAssistantSpeaking = false;
+    isUserSpeaking = false;
     updateUIState('ended');
     resetWaveVisualizer();
+
+    if (vapi) {
+      const clientToStop = vapi;
+      vapi = null;
+      try {
+        await clientToStop.stop();
+      } catch (err) {
+        console.warn('Notice stopping Vapi call:', err);
+      }
+    }
   }
 
   function toggleVoiceCall() {
