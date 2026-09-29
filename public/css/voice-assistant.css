@@ -222,6 +222,68 @@
   color: #1B4332;
 }
 
+/* Modal Language Selector Container (Fixed, Non-Clipping) */
+.kisan-voice-lang-container {
+  background: #F4F7F5;
+  border-bottom: 2px solid #D8E2DC;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  z-index: 20;
+  position: relative;
+}
+
+.kisan-voice-lang-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #2D6A4F;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Language Bar */
+.kisan-voice-lang-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  overflow: visible !important;
+}
+
+.kisan-voice-lang-pill {
+  background: #FFFFFF;
+  border: 1.5px solid #B7C9BE;
+  color: #1B4332;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.kisan-voice-lang-pill:hover {
+  background: #E9F5DB;
+  border-color: #2D6A4F;
+}
+
+.kisan-voice-lang-pill.active {
+  background: #2D6A4F;
+  color: #FFFFFF;
+  border-color: #2D6A4F;
+  box-shadow: 0 2px 6px rgba(45, 106, 79, 0.25);
+  font-weight: 800;
+}
+
 /* Modal Body */
 .kisan-voice-body {
   padding: 20px;
@@ -230,40 +292,7 @@
   flex-direction: column;
   gap: 18px;
   background: #FAFAF7;
-}
-
-/* Language Bar */
-.kisan-voice-lang-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: none;
-}
-
-.kisan-voice-lang-bar::-webkit-scrollbar {
-  display: none;
-}
-
-.kisan-voice-lang-pill {
-  background: #FFFFFF;
-  border: 1.5px solid #D8E2DC;
-  color: #2D6A4F;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 6px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-}
-
-.kisan-voice-lang-pill.active,
-.kisan-voice-lang-pill:hover {
-  background: #2D6A4F;
-  color: #FFFFFF;
-  border-color: #2D6A4F;
+  flex: 1;
 }
 
 /* Status Card */
@@ -572,6 +601,13 @@
   .kisan-voice-body {
     padding: 14px;
     gap: 14px;
+  }
+  .kisan-voice-lang-container {
+    padding: 8px 14px;
+  }
+  .kisan-voice-lang-pill {
+    padding: 6px 11px;
+    font-size: 12px;
   }
   .kisan-voice-topics-grid {
     grid-template-columns: 1fr;

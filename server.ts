@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import http from 'http';
 import path from 'path';
 import cors from 'cors';
 import { createServer as createViteServer } from 'vite';
@@ -11,12 +12,18 @@ import { requestsRouter } from './backend/routes/requests.js';
 import { announcementsRouter } from './backend/routes/announcements.js';
 import { adminRouter } from './backend/routes/admin.js';
 import { geminiVoiceRouter } from './backend/routes/geminiVoice.js';
+import { setupGeminiLiveWebSocket } from './backend/services/geminiLiveService.js';
 import { store } from './backend/store.js';
 
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const isProduction = process.env.NODE_ENV === 'production';
+
+  const httpServer = http.createServer(app);
+
+  // Setup Gemini Live Real-time WebSocket Service
+  setupGeminiLiveWebSocket(httpServer);
 
   // Global Middlewares
   app.use(cors());
@@ -105,7 +112,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`🌾 KisanSetu Farmer Procurement System running on http://0.0.0.0:${PORT}`);
   });
 }

@@ -122,6 +122,8 @@ img, svg, video, canvas, audio, iframe, embed, object {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .gov-tag {
@@ -130,12 +132,14 @@ img, svg, video, canvas, audio, iframe, embed, object {
   gap: 8px;
   color: #D8E2DC;
   letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
 .lang-selector-group {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .lang-btn {
@@ -147,6 +151,8 @@ img, svg, video, canvas, audio, iframe, embed, object {
   font-weight: 700;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s;
 }
 
