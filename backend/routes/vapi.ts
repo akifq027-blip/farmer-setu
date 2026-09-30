@@ -3,25 +3,21 @@ import { store } from '../store.js';
 
 export const vapiRouter = Router();
 
-// Official MSP Benchmark Rates for Agricultural Procurement (₹ / Quintal)
-const MSP_RATES: Record<string, { msp: number; season: string; quality_standard: string; moisture_limit: string }> = {
-  'Wheat': { msp: 2275, season: 'Rabi', quality_standard: 'FAQ (Fair Average Quality)', moisture_limit: 'Below 12%' },
-  'Paddy (Common)': { msp: 2300, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 17%' },
-  'Paddy (Grade A)': { msp: 2320, season: 'Kharif', quality_standard: 'FAQ Grade A', moisture_limit: 'Below 17%' },
-  'Paddy': { msp: 2300, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 17%' },
-  'Mustard / Sarson': { msp: 5650, season: 'Rabi', quality_standard: 'FAQ', moisture_limit: 'Below 8%' },
-  'Mustard': { msp: 5650, season: 'Rabi', quality_standard: 'FAQ', moisture_limit: 'Below 8%' },
-  'Cotton / Kapas': { msp: 7121, season: 'Kharif', quality_standard: 'Medium/Long Staple', moisture_limit: 'Below 8-12%' },
-  'Cotton': { msp: 7121, season: 'Kharif', quality_standard: 'Medium/Long Staple', moisture_limit: 'Below 8-12%' },
-  'Gram / Chana': { msp: 5440, season: 'Rabi', quality_standard: 'FAQ', moisture_limit: 'Below 10%' },
-  'Chana': { msp: 5440, season: 'Rabi', quality_standard: 'FAQ', moisture_limit: 'Below 10%' },
-  'Soyabean': { msp: 4892, season: 'Kharif', quality_standard: 'FAQ (Yellow)', moisture_limit: 'Below 12%' },
-  'Maize / Makka': { msp: 2090, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 14%' },
-  'Maize': { msp: 2090, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 14%' },
-  'Moong': { msp: 8558, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 12%' },
-  'Groundnut / Mungfali': { msp: 6377, season: 'Kharif', quality_standard: 'FAQ in Pods', moisture_limit: 'Below 8%' },
-  'Groundnut': { msp: 6377, season: 'Kharif', quality_standard: 'FAQ in Pods', moisture_limit: 'Below 8%' },
-  'Sunflower': { msp: 6760, season: 'Kharif', quality_standard: 'FAQ', moisture_limit: 'Below 9%' }
+// Direct Fair-Trade Benchmark Rates vs Traditional Mandi Exploitation (₹ / Quintal)
+const DIRECT_FAIR_RATES: Record<string, { direct_fair_price: number; traditional_mandi_net_after_cuts: number; farmer_gain_per_quintal: number; moisture_limit: string; direct_buyers: string }> = {
+  'Wheat': { direct_fair_price: 2275, traditional_mandi_net_after_cuts: 1930, farmer_gain_per_quintal: 345, moisture_limit: 'Below 12%', direct_buyers: 'Flour Mills & Food Cooperatives' },
+  'Paddy (Grade A)': { direct_fair_price: 2320, traditional_mandi_net_after_cuts: 1970, farmer_gain_per_quintal: 350, moisture_limit: 'Below 14%', direct_buyers: 'State Rice Millers & Retail Aggregators' },
+  'Paddy': { direct_fair_price: 2300, traditional_mandi_net_after_cuts: 1955, farmer_gain_per_quintal: 345, moisture_limit: 'Below 14%', direct_buyers: 'Direct Rice Processors' },
+  'Mustard / Sarson': { direct_fair_price: 5650, traditional_mandi_net_after_cuts: 4800, farmer_gain_per_quintal: 850, moisture_limit: 'Below 8%', direct_buyers: 'Oil Extraction Cooperatives' },
+  'Mustard': { direct_fair_price: 5650, traditional_mandi_net_after_cuts: 4800, farmer_gain_per_quintal: 850, moisture_limit: 'Below 8%', direct_buyers: 'Oil Extraction Cooperatives' },
+  'Cotton / Kapas': { direct_fair_price: 7121, traditional_mandi_net_after_cuts: 6050, farmer_gain_per_quintal: 1071, moisture_limit: 'Below 8-12%', direct_buyers: 'Textile Mills Collective' },
+  'Cotton': { direct_fair_price: 7121, traditional_mandi_net_after_cuts: 6050, farmer_gain_per_quintal: 1071, moisture_limit: 'Below 8-12%', direct_buyers: 'Textile Mills Collective' },
+  'Gram / Chana': { direct_fair_price: 5440, traditional_mandi_net_after_cuts: 4620, farmer_gain_per_quintal: 820, moisture_limit: 'Below 10%', direct_buyers: 'Dal Millers Federation' },
+  'Chana': { direct_fair_price: 5440, traditional_mandi_net_after_cuts: 4620, farmer_gain_per_quintal: 820, moisture_limit: 'Below 10%', direct_buyers: 'Dal Millers Federation' },
+  'Soyabean': { direct_fair_price: 4892, traditional_mandi_net_after_cuts: 4150, farmer_gain_per_quintal: 742, moisture_limit: 'Below 12%', direct_buyers: 'Solvent Extraction Units' },
+  'Maize / Makka': { direct_fair_price: 2090, traditional_mandi_net_after_cuts: 1775, farmer_gain_per_quintal: 315, moisture_limit: 'Below 14%', direct_buyers: 'Feed & Starch Manufacturers' },
+  'Maize': { direct_fair_price: 2090, traditional_mandi_net_after_cuts: 1775, farmer_gain_per_quintal: 315, moisture_limit: 'Below 14%', direct_buyers: 'Feed & Starch Manufacturers' },
+  'Groundnut': { direct_fair_price: 6377, traditional_mandi_net_after_cuts: 5420, farmer_gain_per_quintal: 957, moisture_limit: 'Below 8%', direct_buyers: 'Confectionery & Oil Mills' }
 };
 
 // GET /api/vapi/config - Public credentials for frontend Vapi Web SDK
@@ -46,6 +42,8 @@ function executeVapiTool(name: string, args: Record<string, any>): any {
       r.token_number.toUpperCase().replace('-', '') === token.replace('-', '')
     );
     if (match) {
+      const qty = Number(match.quantity_quintals) || 0;
+      const commissionSaved = Math.round(qty * 2300 * 0.15);
       return {
         found: true,
         token: match.token_number,
@@ -53,59 +51,64 @@ function executeVapiTool(name: string, args: Record<string, any>): any {
         crop: match.crop_name,
         quantity_quintals: match.quantity_quintals,
         status: match.status,
+        fpo_aggregation_hub: match.center_name,
+        matched_buyer: 'National Institutional Grain Aggregator (0% Brokerage)',
+        middleman_commission_saved: `₹${commissionSaved.toLocaleString('en-IN')}`,
         queue_position: match.queue_position,
         estimated_waiting_minutes: match.estimated_waiting_minutes,
-        center: match.center_name,
-        preferred_date: match.preferred_date,
-        payment_status: match.payment_status
+        dispatch_date: match.preferred_date,
+        payment_status: match.payment_status || 'Direct Bank Escrow'
       };
     }
     return {
       found: false,
-      message: `Token ${token || 'unspecified'} not found in government procurement database.`
+      message: `Direct Deal Token ${token || 'unspecified'} not found in FPO trade database.`
     };
   }
 
-  if (name === 'get_msp_crop_rates') {
+  if (name === 'get_msp_crop_rates' || name === 'get_direct_fair_rates') {
     const cropQuery = String(args.cropName || args.crop || '').trim().toLowerCase();
     if (cropQuery) {
-      const matchedKey = Object.keys(MSP_RATES).find(k => k.toLowerCase().includes(cropQuery));
-      return matchedKey ? { [matchedKey]: MSP_RATES[matchedKey] } : { rates: MSP_RATES };
+      const matchedKey = Object.keys(DIRECT_FAIR_RATES).find(k => k.toLowerCase().includes(cropQuery));
+      return matchedKey ? { [matchedKey]: DIRECT_FAIR_RATES[matchedKey] } : { rates: DIRECT_FAIR_RATES };
     }
-    return { rates: MSP_RATES };
+    return {
+      message: 'KisanSetu Direct Fair Prices vs Traditional Mandi Net Realization',
+      rates: DIRECT_FAIR_RATES
+    };
   }
 
-  if (name === 'get_procurement_centers') {
+  if (name === 'get_procurement_centers' || name === 'get_fpo_hubs') {
     const district = String(args.district || '').trim().toLowerCase();
     let centers = store.getCenters();
     if (district) {
       centers = centers.filter(c => c.district.toLowerCase().includes(district));
     }
     return {
-      centers: centers.map(c => ({
-        name: c.center_name,
+      fpo_aggregation_hubs: centers.map(c => ({
+        hub_name: c.center_name,
         district: c.district,
         state: c.state,
-        crops_accepted: c.crops_accepted,
+        crops_handled: c.crops_accepted,
         timings: `${c.opening_time} to ${c.closing_time}`,
-        contact: c.contact_number,
+        coordinator_contact: c.contact_number,
         status: c.status
       })).slice(0, 6)
     };
   }
 
-  if (name === 'get_procurement_schedules') {
+  if (name === 'get_procurement_schedules' || name === 'get_harvest_demands') {
     const crop = String(args.cropName || args.crop || '').trim().toLowerCase();
     let scheds = store.getSchedules();
     if (crop) {
       scheds = scheds.filter(s => s.crop_name.toLowerCase().includes(crop));
     }
     return {
-      schedules: scheds.map(s => ({
+      buyer_pre_orders: scheds.map(s => ({
         crop: s.crop_name,
         date: s.procurement_date,
-        time: `${s.start_time} - ${s.end_time}`,
-        remaining_slots: s.remaining_slots,
+        operating_hours: `${s.start_time} - ${s.end_time}`,
+        open_quota_quintals: s.remaining_slots,
         status: s.status
       })).slice(0, 6)
     };
@@ -114,7 +117,7 @@ function executeVapiTool(name: string, args: Record<string, any>): any {
   if (name === 'get_latest_announcements') {
     const anns = store.getAnnouncements();
     return {
-      announcements: anns.slice(0, 4).map(a => ({
+      direct_buyer_demands: anns.slice(0, 4).map(a => ({
         title: a.title,
         priority: a.priority,
         message: a.message,
@@ -131,12 +134,11 @@ function executeVapiTool(name: string, args: Record<string, any>): any {
       r.token_number.toLowerCase().includes(query)
     );
     return {
-      requests: reqs.slice(0, 5).map(r => ({
-        token: r.token_number,
+      direct_orders: reqs.slice(0, 5).map(r => ({
+        deal_token: r.token_number,
         farmer: r.farmer_name,
         crop: r.crop_name,
         status: r.status,
-        queue_position: r.queue_position,
         date: r.preferred_date
       }))
     };

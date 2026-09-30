@@ -48,7 +48,66 @@ async function loadDashboardData(farmerId, isPolling = false) {
   }
 }
 
+const BENCHMARK_RATES = {
+  'paddy': 2320,
+  'cotton': 7121,
+  'wheat': 2275,
+  'maize': 2090,
+  'soybean': 4892,
+  'gram': 5440,
+  'mustard': 5650
+};
+
+function renderSavingsHighlight(requests) {
+  let totalCommissionSaved = 0;
+  let totalDirectQuintals = 0;
+  requests.forEach(r => {
+    const crop = (r.crop_name || '').toLowerCase();
+    let rate = 2300;
+    for (const [k, v] of Object.entries(BENCHMARK_RATES)) {
+      if (crop.includes(k)) { rate = v; break; }
+    }
+    const qty = Number(r.quantity_quintals) || 0;
+    totalDirectQuintals += qty;
+    totalCommissionSaved += Math.round(qty * rate * 0.15);
+  });
+
+  const existing = document.getElementById('savings-highlight-banner');
+  if (existing) {
+    existing.remove();
+  }
+
+  const container = document.getElementById('active-token-container');
+  if (!container) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'savings-highlight-banner';
+  banner.innerHTML = `
+    <div style="background: linear-gradient(135deg, #14532d, #16a34a); color:#fff; border-radius:12px; padding:18px 24px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; box-shadow:0 4px 16px rgba(22,163,74,0.25);">
+      <div>
+        <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:#facc15;">
+          🌾 Direct Disintermediation Financial Impact
+        </div>
+        <div style="font-size:24px; font-weight:900; margin-top:4px;">
+          Total Middleman Commission Saved: ₹${totalCommissionSaved.toLocaleString('en-IN')}
+        </div>
+        <div style="font-size:13px; opacity:0.95; margin-top:2px;">
+          Across ${totalDirectQuintals.toFixed(1)} Quintals traded directly with verified institutional buyers (0% Mandi Brokerage).
+        </div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <a href="/request.html" class="btn btn-sm" style="background:#ffffff; color:#14532d; font-weight:800; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+          + Sell Direct Batch
+        </a>
+      </div>
+    </div>
+  `;
+
+  container.parentNode.insertBefore(banner, container);
+}
+
 function renderActiveTokenCard(requests) {
+  renderSavingsHighlight(requests);
   const container = document.getElementById('active-token-container');
   if (!container) return;
 
@@ -66,10 +125,10 @@ function renderActiveTokenCard(requests) {
       <div class="card" style="padding: 36px; text-align: center; background: #ffffff;">
         <div style="font-size: 48px; margin-bottom: 12px;">🌾</div>
         <h3 style="font-size: 20px; font-weight: 800; color: #14532d; margin-bottom: 8px;">
-          No Active Procurement Token Right Now
+          No Active Direct Trade Deal Right Now
         </h3>
         <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 20px;">
-          Book a drop-off slot for your harvest (Paddy, Wheat, Cotton, Maize, etc.) to get an instant digital queue token.
+          List your harvest batch (Paddy, Wheat, Cotton, Maize, etc.) to match directly with bulk buyers at 0% broker fee.
         </p>
         <a href="/request.html" class="btn btn-primary btn-lg">
           ➕ <span data-i18n="dash_btn_new_request">Book New Crop Slot</span>
@@ -92,17 +151,17 @@ function renderActiveTokenCard(requests) {
       <div class="token-card-header">
         <div style="display: flex; align-items: center; gap: 10px;">
           <span style="font-size: 20px;">🎟️</span>
-          <span style="font-weight: 800; font-size: 16px;">Active Drop-Off Token</span>
+          <span style="font-weight: 800; font-size: 16px;">Active Direct Trade Deal (0% Brokerage)</span>
         </div>
         <div class="token-live-indicator">
-          <span class="pulse-dot"></span> Live Queue Active
+          <span class="pulse-dot"></span> Live Deal Active
         </div>
       </div>
 
       <div class="token-body-grid">
         <!-- Col 1: Big Token Number -->
         <div class="token-number-box">
-          <div class="token-label" data-i18n="dash_token_no">TOKEN NUMBER</div>
+          <div class="token-label" data-i18n="dash_token_no">DIRECT DEAL TOKEN</div>
           <div class="token-ring-avatar">
             <span class="token-huge-digits">${activeRequest.token_number}</span>
           </div>
@@ -122,40 +181,40 @@ function renderActiveTokenCard(requests) {
             <span class="detail-value">${activeRequest.quantity_quintals} Quintals</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label" data-i18n="dash_center">Center:</span>
+            <span class="detail-label" data-i18n="dash_center">FPO Hub:</span>
             <span class="detail-value" style="text-align:right;">${activeRequest.center_name}</span>
           </div>
           <div class="detail-row">
-            <span class="detail-label" data-i18n="dash_date">Date:</span>
+            <span class="detail-label" data-i18n="dash_date">Dispatch Date:</span>
             <span class="detail-value">${activeRequest.preferred_date}</span>
           </div>
           <div class="detail-row" style="margin-bottom:0;">
-            <span class="detail-label">Vehicle:</span>
-            <span class="detail-value">${activeRequest.transport_mode} ${activeRequest.vehicle_number ? `(${activeRequest.vehicle_number})` : ''}</span>
+            <span class="detail-label">Matched Buyer:</span>
+            <span class="detail-value" style="color:#15803d; font-weight:700;">Direct Institutional Aggregator</span>
           </div>
         </div>
 
         <!-- Col 3: Live Queue Ahead -->
         <div class="queue-estimate-col">
-          <div class="token-label" data-i18n="dash_farmers_ahead">Farmers Ahead</div>
-          <div class="queue-ahead-count">${activeRequest.status === 'Processing' ? 'Next Up!' : farmersAhead}</div>
-          <div class="queue-ahead-sub">${activeRequest.status === 'Processing' ? 'Weighbridge Counter' : 'Farmers Ahead of You'}</div>
+          <div class="token-label">FPO Hub Inward Status</div>
+          <div class="queue-ahead-count">${activeRequest.status === 'Processing' ? 'Weighbridge' : farmersAhead}</div>
+          <div class="queue-ahead-sub">${activeRequest.status === 'Processing' ? 'Quality Testing Scale' : 'Farmers Ahead in Inward Queue'}</div>
           <div class="queue-time-estimate">
-            ⏳ Est. Wait: ~${estWait}
+            ⏳ Inspection Est: ~${estWait}
           </div>
         </div>
       </div>
 
       <div style="background: #f8fafc; padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div style="font-size: 13px; color: var(--text-muted);">
-          💬 <strong>Note:</strong> ${activeRequest.admin_notes || 'Please keep your Aadhaar & Land records ready.'}
+          💬 <strong>Disintermediation Note:</strong> 100% funds released via direct bank escrow upon digital moisture verification.
         </div>
         <div style="display: flex; gap: 10px;">
           <a href="/status.html?token=${encodeURIComponent(activeRequest.token_number)}" class="btn btn-primary btn-sm">
-            🔍 Track Live Status
+            🔍 Track Direct Transit
           </a>
           <button onclick="printTokenSlip('${activeRequest.id}')" class="btn btn-outline btn-sm">
-            🖨️ Token Slip
+            🖨️ Direct Deal Slip
           </button>
         </div>
       </div>

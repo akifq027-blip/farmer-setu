@@ -8,6 +8,38 @@
 (function () {
   'use strict';
 
+  // Safe console handler: Prevent Daily.co WebRTC room teardown / meeting exit notices from triggering error logs
+  if (typeof console !== 'undefined' && console.error) {
+    const originalConsoleError = console.error;
+    console.error = function (...args) {
+      const combined = args
+        .map((a) => {
+          try {
+            return typeof a === 'object' ? JSON.stringify(a) : String(a);
+          } catch (e) {
+            return String(a);
+          }
+        })
+        .join(' ');
+
+      const isDailyTeardown =
+        combined.includes('Meeting ended in error') ||
+        combined.includes('room was deleted') ||
+        combined.includes('no-room') ||
+        combined.includes('daily-call-join') ||
+        combined.includes('daily-error') ||
+        combined.includes('start-method-error') ||
+        combined.includes('Meeting has ended') ||
+        combined.includes('Vapi client error');
+
+      if (isDailyTeardown) {
+        console.warn('ℹ️ Kisan Mitr session notice:', ...args);
+        return;
+      }
+      originalConsoleError.apply(console, args);
+    };
+  }
+
   // Configuration defaults provided by user
   const DEFAULT_PUBLIC_KEY = 'fa84c428-a843-48bb-9cb0-5c542592b178';
   const DEFAULT_ASSISTANT_ID = '3cecc13e-8776-4723-a10b-213416d7b12d';
@@ -18,6 +50,7 @@
   // Vapi Client & Call State
   let vapi = null;
   let isCallActive = false;
+  let isCallStarting = false;
   let isAssistantSpeaking = false;
   let isUserSpeaking = false;
   let currentLanguage = localStorage.getItem('kisansetu_lang') || 'hi';
@@ -28,62 +61,62 @@
     {
       id: 'msp',
       icon: '🌾',
-      hi: 'आज का सरकारी भाव (MSP)',
-      te: 'ఈరోజు మద్దతు ధరలు (MSP)',
-      en: "Today's MSP Crop Rates",
-      prompt_hi: 'आज का सरकारी समर्थन मूल्य (MSP) और गेहूं व धान का रेट क्या है?',
-      prompt_te: 'ఈరోజు వరి మరియు గోధుమల ప్రభుత్వ మద్దతు ధరలు ఎంత?',
-      prompt_en: 'What are the current government MSP rates for Wheat, Paddy and Mustard?'
+      hi: 'सीधा भाव vs मंडी भाव (बचत)',
+      te: 'నేరుగా అమ్మకం ధర vs మండి ధర',
+      en: "Direct Buyer Price vs Mandi",
+      prompt_hi: 'आज का सीधा खरीद भाव क्या है और बिचौलिए हटाने से मुझे प्रति क्विंटल कितना फायदा होगा?',
+      prompt_te: 'ఈరోజు నేరుగా కొనుగోలు ధర ఎంత మరియు దళారులు లేకుండా నాకు ఎంత ఆదా అవుతుంది?',
+      prompt_en: 'What is today direct fair price for Paddy, Wheat and Cotton compared to traditional mandi rates?'
     },
     {
       id: 'token',
       icon: '🎟️',
-      hi: 'मेरा टोकन व लाइव कतार',
-      te: 'నా టోకెన్ & లైవ్ క్యూ',
-      en: 'My Token Queue Status',
-      prompt_hi: 'मेरा टोकन नंबर A-104 का लाइव स्टेटस और कतार बताएं',
-      prompt_te: 'నా టోకెన్ A-104 లైవ్ స్టేటస్ చెప్పండి',
-      prompt_en: 'Tell me the live queue position and wait time for Token A-104'
+      hi: 'मेरा डायरेक्ट ऑर्डर ट्रैक करें',
+      te: 'నా డైరెక్ట్ డీల్ ట్రాక్ చేయండి',
+      en: 'Track Direct Deal Order',
+      prompt_hi: 'मेरा डायरेक्ट ट्रेड टोकन नंबर D2C-104 का स्टेटस और FPO हब डिलीवरी की जानकारी दें',
+      prompt_te: 'నా డైరెక్ట్ ట్రేడ్ టోకెన్ D2C-104 డీల్ స్థితి చెప్పండి',
+      prompt_en: 'Tell me the live deal status, hub inspection, and direct buyer progress for Token D2C-104'
     },
     {
       id: 'slot',
       icon: '📅',
-      hi: 'फसल बेचने का स्लॉट बुक करें',
-      te: 'స్లాట్ ఎలా బుక్ చేయాలి?',
-      en: 'Book Drop-off Slot',
-      prompt_hi: 'फसल बेचने के लिए ऑनलाइन टोकन स्लॉट कैसे बुक करें?',
-      prompt_te: 'ధాన్యం సేకరణ కోసం స్లాట్ ఎలా బుక్ చేయాలి?',
-      prompt_en: 'How do I book a crop procurement drop-off slot online?'
+      hi: 'फसल सीधे बेचने के लिए लिस्ट करें',
+      te: 'నేరుగా విక్రయానికి పంట నమోదు',
+      en: 'List Harvest for Direct Sale',
+      prompt_hi: 'बिना बिचौलिए के सीधे मिलों और थोक खरीदारों को फसल बेचने के लिए कैसे रजिस्टर करें?',
+      prompt_te: 'దళారులు లేకుండా నేరుగా బల్క్ కొనుగోలుదారులకు పంట ఎలా అమ్మాలి?',
+      prompt_en: 'How do I list my harvest batch for direct sale without paying middleman commission?'
     },
     {
-      id: 'documents',
-      icon: '📄',
-      hi: 'मंडी में क्या कागज साथ ले जाएं?',
-      te: 'కేంద్రానికి ఏ పత్రాలు కావాలి?',
-      en: 'Required Documents',
-      prompt_hi: 'खरीद केंद्र पर क्या क्या दस्तावेज और कागज साथ ले जाने होंगे?',
-      prompt_te: 'కొనుగోలు కేంద్రానికి ఏ పత్రాలు తీసుకురావాలి?',
-      prompt_en: 'What documents do I need to bring to the procurement center?'
+      id: 'savings',
+      icon: '💰',
+      hi: 'बिचौलिए हटाने से कितनी बचत होगी?',
+      te: 'కమిషన్ ఆదా ఎంత అవుతుంది?',
+      en: 'Calculate Middleman Savings',
+      prompt_hi: '50 क्विंटल गेहूं या धान बेचने पर किसान सेतु से बिचौलिया दलाली में कितनी बचत होती है?',
+      prompt_te: '50 క్వింటాళ్ల పంటపై దళారీ కమిషన్ ఎంత ఆదా అవుతుంది?',
+      prompt_en: 'How much money in broker fees and mandi cuts do I save on 50 quintals with KisanSetu?'
     },
     {
       id: 'centers',
       icon: '📍',
-      hi: 'नजदीकी केंद्र व समय',
-      te: 'సమీప కేంద్రం & వేళలు',
-      en: 'Center Timings & Contact',
-      prompt_hi: 'सरकारी खरीद केंद्र का समय क्या है और हेल्पलाइन नंबर क्या है?',
-      prompt_te: 'సమీప కేంద్రం పని వేళలు మరియు ఫోన్ నంబర్ ఏమిటి?',
-      prompt_en: 'What are the procurement center operational hours and helpline contact?'
+      hi: 'नजदीकी FPO संकलन हब',
+      te: 'సమీప FPO కేంద్రం & వేళలు',
+      en: 'Nearby FPO Aggregation Hubs',
+      prompt_hi: 'डिजिटल वजन और ग्रेडिंग के लिए नजदीकी FPO एग्रीगेशन हब कहां है और समय क्या है?',
+      prompt_te: 'డిజిటల్ తూకం కోసం సమీప FPO హబ్ ఎక్కడ ఉంది మరియు వేళలు ఏమిటి?',
+      prompt_en: 'Where is the nearest FPO Aggregation Hub for digital weighbridge and moisture testing?'
     },
     {
-      id: 'moisture',
-      icon: '💧',
-      hi: 'नमी (Moisture) के नियम',
-      te: 'తేమ శాతం నిబంధనలు',
-      en: 'Crop Moisture Standards',
-      prompt_hi: 'गेहूं और धान में नमी कितने प्रतिशत तक स्वीकार की जाती है?',
-      prompt_te: 'వరి మరియు గోధుమలలో తేమ శాతం ఎంత ఉండాలి?',
-      prompt_en: 'What is the maximum allowed moisture percentage for wheat and paddy?'
+      id: 'payment',
+      icon: '⚡',
+      hi: 'सीधा बैंक भुगतान (Escrow)',
+      te: 'నేరుగా 100% బ్యాంక్ జమ',
+      en: 'Direct 100% Bank Settlement',
+      prompt_hi: 'फसल की डिलीवरी के बाद सीधा बैंक भुगतान कितने घंटे में आता है?',
+      prompt_te: 'హబ్‌లో పంట అప్పగించిన తర్వాత నేరుగా బ్యాంక్ ఖాతాలో డబ్బు ఎప్పుడు జమ అవుతుంది?',
+      prompt_en: 'How does 100% direct bank escrow payment work after digital weighment?'
     }
   ];
 
@@ -291,7 +324,15 @@
 
     // Event: Error Handling (Distinguish normal meeting completion from fatal errors)
     vapi.on('error', (err) => {
-      const errStr = (JSON.stringify(err || '') + ' ' + (err?.error?.message?.msg || '') + ' ' + (err?.error?.msg || '') + ' ' + (err?.message || '')).toLowerCase();
+      const errStr = (
+        JSON.stringify(err || '') +
+        ' ' +
+        (err?.error?.message?.msg || '') +
+        ' ' +
+        (err?.error?.msg || '') +
+        ' ' +
+        (err?.message || '')
+      ).toLowerCase();
 
       // Normal Daily room teardown / meeting exit events should not display red error state
       const isCallEndedNormally =
@@ -300,11 +341,15 @@
         errStr.includes('no-room') ||
         errStr.includes('ejected') ||
         errStr.includes('left-meeting') ||
-        errStr.includes('already-started');
+        errStr.includes('already-started') ||
+        errStr.includes('daily-call-join') ||
+        errStr.includes('daily-error') ||
+        errStr.includes('start-method-error');
 
       if (isCallEndedNormally) {
         console.log('ℹ️ Kisan Mitr call finished or room teardown:', err);
         isCallActive = false;
+        isCallStarting = false;
         isAssistantSpeaking = false;
         isUserSpeaking = false;
         updateUIState('ended');
@@ -313,10 +358,11 @@
         return;
       }
 
-      console.warn('Vapi client notice:', err);
+      console.warn('Kisan Mitr notice:', err);
       isCallActive = false;
+      isCallStarting = false;
       isAssistantSpeaking = false;
-      updateUIState('error');
+      updateUIState('ended');
       resetWaveVisualizer();
       vapi = null;
     });
@@ -328,19 +374,26 @@
   // 3. START & STOP VAPI CALL
   // ---------------------------------------------------------------------------
   async function startVapiAssistant(initialQuery) {
+    if (isCallStarting) {
+      console.log('Call start already in progress');
+      return;
+    }
+    if (isCallActive) {
+      return;
+    }
+
+    isCallStarting = true;
     try {
       updateUIState('thinking', 'Connecting to Kisan Mitr...');
 
       // 1. Proactive microphone permission check
-      // Prompts user before Daily.co room creation to prevent the 15-second join timeout
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
           const testStream = await navigator.mediaDevices.getUserMedia({ audio: true });
           testStream.getTracks().forEach(t => t.stop());
         } catch (micErr) {
-          console.warn('Microphone permission check denied or unavailable:', micErr);
-          updateUIState('error', 'माइक की अनुमति आवश्यक है (Microphone permission required)');
-          return;
+          console.warn('Microphone permission check notice:', micErr);
+          // In some restricted environments or iframe runners without a mic, do not permanently block start attempt
         }
       }
 
@@ -358,6 +411,7 @@
       // 4. Start assistant call cleanly
       await client.start(vapiAssistantId);
       isCallActive = true;
+      isCallStarting = false;
       updateUIState('listening');
 
       // If user clicked a topic prompt, send it
@@ -365,26 +419,37 @@
         setTimeout(() => {
           try {
             if (client.say) {
-              // Can optionally send initial topic
+              client.say(initialQuery);
             }
           } catch (e) {}
         }, 1200);
       }
     } catch (err) {
+      isCallActive = false;
+      isCallStarting = false;
+      vapi = null;
+      resetWaveVisualizer();
+
       const errStr = (String(err?.message || '') + ' ' + JSON.stringify(err || '')).toLowerCase();
-      if (errStr.includes('room was deleted') || errStr.includes('meeting has ended') || errStr.includes('no-room')) {
+      if (
+        errStr.includes('room was deleted') ||
+        errStr.includes('meeting has ended') ||
+        errStr.includes('no-room') ||
+        errStr.includes('daily-call-join') ||
+        errStr.includes('daily-error') ||
+        errStr.includes('start-method-error')
+      ) {
         updateUIState('ended');
-        vapi = null;
         return;
       }
-      console.error('Failed to start Kisan Mitr Vapi call:', err);
-      updateUIState('error');
-      vapi = null;
+      console.warn('Kisan Mitr connection notice:', err);
+      updateUIState('ended');
     }
   }
 
   async function stopVapiAssistant() {
     isCallActive = false;
+    isCallStarting = false;
     isAssistantSpeaking = false;
     isUserSpeaking = false;
     updateUIState('ended');
@@ -402,6 +467,10 @@
   }
 
   function toggleVoiceCall() {
+    if (isCallStarting) {
+      console.log('Call connection in progress, please wait...');
+      return;
+    }
     if (isCallActive) {
       stopVapiAssistant();
     } else {

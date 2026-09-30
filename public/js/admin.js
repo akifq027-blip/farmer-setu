@@ -52,10 +52,15 @@ async function loadAdminStats() {
 
     document.getElementById('kpi-total-farmers').textContent = s.totalFarmers;
     document.getElementById('kpi-today-requests').textContent = s.todayRequestsCount;
-    document.getElementById('kpi-in-queue').textContent = s.inQueueCount;
-    document.getElementById('kpi-processing').textContent = s.processingCount;
-    document.getElementById('kpi-completed').textContent = s.completedCount;
+    if (document.getElementById('kpi-in-queue')) document.getElementById('kpi-in-queue').textContent = s.inQueueCount;
+    if (document.getElementById('kpi-processing')) document.getElementById('kpi-processing').textContent = s.processingCount;
+    if (document.getElementById('kpi-completed')) document.getElementById('kpi-completed').textContent = s.completedCount;
+    if (document.getElementById('kpi-completed-count')) document.getElementById('kpi-completed-count').textContent = `${s.completedCount} batches delivered`;
     document.getElementById('kpi-total-quintals').textContent = `${s.totalQuintalsProcured} Qtl`;
+    if (document.getElementById('kpi-brokerage-saved')) {
+      const saved = s.totalBrokerageSaved || Math.round((Number(s.totalQuintalsProcured) || 0) * 2300 * 0.15);
+      document.getElementById('kpi-brokerage-saved').textContent = `₹${saved.toLocaleString('en-IN')}`;
+    }
 
     // Database status check
     try {

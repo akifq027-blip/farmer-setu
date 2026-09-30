@@ -25,6 +25,13 @@ adminRouter.get('/stats', (req, res) => {
       0
     );
 
+    const totalBrokerageSaved = Math.round(
+      requests.reduce((sum, r) => {
+        const qty = Number(r.quantity_quintals) || 0;
+        return sum + (qty * 2350 * 0.15);
+      }, 0)
+    );
+
     const totalAvailableSlots = schedules.reduce(
       (sum, s) => sum + (Number(s.remaining_slots) || 0),
       0
@@ -42,6 +49,7 @@ adminRouter.get('/stats', (req, res) => {
         processingCount: processing.length,
         completedCount: completed.length,
         totalQuintalsProcured: totalQuintalsProcured.toFixed(2),
+        totalBrokerageSaved,
         totalCenters: centers.length,
         totalAvailableSlots
       }

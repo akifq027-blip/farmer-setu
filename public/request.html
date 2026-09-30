@@ -63,13 +63,13 @@
         <div class="card-header" style="background:#f0fdf4; padding:24px 28px;">
           <div>
             <span class="status-badge token-assigned" style="margin-bottom:6px; display:inline-block;">
-              🎟️ Digital Token Registration
+              🌾 Direct Farm-to-Buyer Listing (0% Brokerage)
             </span>
             <h2 style="font-size:22px; font-weight:800; color:#14532d;">
-              Submit Crop Procurement Request
+              List Crop Batch for Direct Sale
             </h2>
             <p style="font-size:14px; color:var(--text-muted); margin-top:4px;">
-              Fill in your harvest details to get an instant digital queue token and scheduled drop-off date.
+              Sell directly to verified bulk buyers, flour mills, and retailers. Lock guaranteed fair prices and book your FPO Aggregation Hub delivery slot.
             </p>
           </div>
         </div>
@@ -101,10 +101,10 @@
             <!-- Center Selection -->
             <div class="form-group">
               <label class="form-label" for="procurement-center">
-                🏢 Select Procurement Center / Mandi <span class="req">*</span>
+                🏢 Select Community FPO Aggregation Hub <span class="req">*</span>
               </label>
               <select id="procurement-center" class="form-select" required>
-                <option value="">Loading procurement centers...</option>
+                <option value="">Loading aggregation hubs...</option>
               </select>
               <div id="center-info-help" style="display:none; background:#ecfdf5; border:1px solid #a7f3d0; padding:10px; border-radius:6px; font-size:13px; color:#065f46; margin-top:8px;">
                 <!-- Populated on center change -->
@@ -115,7 +115,7 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label" for="crop-select">
-                  🌾 Crop to Sell <span class="req">*</span>
+                  🌾 Crop to Sell Direct <span class="req">*</span>
                 </label>
                 <select id="crop-select" class="form-select" required>
                   <option value="">-- Choose Crop --</option>
@@ -139,11 +139,27 @@
               </div>
             </div>
 
+            <!-- Live Middleman Disintermediation Savings Box -->
+            <div id="savings-calculator-box" style="display:none; margin-bottom:20px; padding:14px 16px; background:#f0fdf4; border:1.5px solid #86efac; border-radius:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:13px;">
+                <span style="color:#b91c1c;">Traditional Mandi Brokerage & Cut Deductions (~15%):</span>
+                <span id="calc-broker-cut" style="color:#b91c1c; font-weight:700; text-decoration:line-through;">₹0</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:15px;">
+                <span style="color:#14532d; font-weight:800;">Your Direct Savings with KisanSetu (0% Brokerage):</span>
+                <span id="calc-saved-profit" style="color:#15803d; font-weight:800; background:#dcfce7; padding:3px 10px; border-radius:4px; border:1px solid #86efac;">+₹0 Extra Profit</span>
+              </div>
+              <div style="font-size:11.5px; color:#15803d; margin-top:6px; display:flex; align-items:center; gap:6px;">
+                <span>✨</span>
+                <span>Direct institutional buyer agreement locks fair price without private intermediary deductions.</span>
+              </div>
+            </div>
+
             <!-- Date & Transport -->
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label" for="preferred-date">
-                  📅 Preferred Drop-off Date <span class="req">*</span>
+                  📅 Preferred Hub Drop-off Date <span class="req">*</span>
                 </label>
                 <input type="date" id="preferred-date" class="form-control" required>
               </div>
@@ -178,11 +194,11 @@
             </div>
 
             <div style="background:#fef3c7; border:1px solid #fde68a; padding:12px; border-radius:8px; font-size:13px; color:#92400e; margin-bottom:20px;">
-              ⚠️ <strong>Notice:</strong> Please ensure moisture standards are met before departure. Moisture above prescribed limits may lead to delays during grading.
+              ⚠️ <strong>Quality Tip:</strong> Batches with moisture below 14% qualify for immediate direct dispatch and a +₹50/Qtl buyer quality bonus.
             </div>
 
             <button type="submit" id="submit-btn" class="btn btn-primary btn-block btn-lg" style="font-size:16px;">
-              🎟️ Generate Token & Book Slot
+              🎟️ Confirm Direct Deal & Generate Token
             </button>
           </form>
         </div>

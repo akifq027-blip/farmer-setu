@@ -3,13 +3,22 @@
  */
 
 const STAGES = [
-  'Request Submitted',
-  'Token Assigned',
-  'Scheduled',
-  'In Queue',
-  'Processing',
-  'Completed'
+  'Direct Deal Booked',
+  'FPO Hub Inward',
+  'Digital Quality & Weighment',
+  'Direct Transit to Buyer',
+  'Settled via Direct Bank Transfer'
 ];
+
+function mapStatusToStageIndex(status) {
+  if (!status) return 0;
+  const s = status.toLowerCase();
+  if (s.includes('completed') || s.includes('settled')) return 4;
+  if (s.includes('transit') || s.includes('dispatch')) return 3;
+  if (s.includes('processing') || s.includes('weigh') || s.includes('quality')) return 2;
+  if (s.includes('queue') || s.includes('inward') || s.includes('scheduled')) return 1;
+  return 0; // Booked / Submitted / Token Assigned
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Check URL query for token or ID
@@ -123,7 +132,7 @@ function renderStatusDetails(req) {
 }
 
 function renderProgressTimeline(currentStatus) {
-  const currentIdx = STAGES.indexOf(currentStatus);
+  const currentIdx = mapStatusToStageIndex(currentStatus);
   const timelineContainer = document.getElementById('timeline-steps-container');
   if (!timelineContainer) return;
 

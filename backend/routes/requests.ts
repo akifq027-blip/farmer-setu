@@ -3,19 +3,20 @@ import { store, ProcurementRequest, RequestStatus } from '../store.js';
 
 export const requestsRouter = Router();
 
-// Helper to generate next unique Token (e.g. A-105, P-203, C-112)
+// Helper to generate next unique Direct Trade Token (e.g. D2C-105, D2C-P203)
 function generateTokenNumber(cropName: string, centerId: string): string {
-  let prefix = 'A';
-  if (cropName.toLowerCase().includes('paddy')) prefix = 'P';
-  else if (cropName.toLowerCase().includes('wheat')) prefix = 'W';
-  else if (cropName.toLowerCase().includes('cotton')) prefix = 'C';
-  else if (cropName.toLowerCase().includes('soy')) prefix = 'S';
-  else if (cropName.toLowerCase().includes('maize')) prefix = 'M';
-  else if (cropName.toLowerCase().includes('gram')) prefix = 'G';
+  let prefix = 'D2C';
+  let cropCode = 'A';
+  if (cropName.toLowerCase().includes('paddy')) cropCode = 'P';
+  else if (cropName.toLowerCase().includes('wheat')) cropCode = 'W';
+  else if (cropName.toLowerCase().includes('cotton')) cropCode = 'C';
+  else if (cropName.toLowerCase().includes('soy')) cropCode = 'S';
+  else if (cropName.toLowerCase().includes('maize')) cropCode = 'M';
+  else if (cropName.toLowerCase().includes('gram')) cropCode = 'G';
 
-  const existingWithPrefix = store.getRequests().filter(r => r.token_number.startsWith(prefix));
+  const existingWithPrefix = store.getRequests().filter(r => r.token_number.includes(cropCode));
   const nextNum = 100 + existingWithPrefix.length + 1;
-  return `${prefix}-${nextNum}`;
+  return `${prefix}-${cropCode}${nextNum}`;
 }
 
 // GET /api/requests (With filters: farmer_id, center_id, status, search)

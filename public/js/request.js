@@ -44,7 +44,54 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (form) {
     form.addEventListener('submit', handleFormSubmit);
   }
+
+  // Live middleman savings calculation listeners
+  const qtyInput = document.getElementById('quantity');
+  const cropInput = document.getElementById('crop-select');
+  if (qtyInput && cropInput) {
+    qtyInput.addEventListener('input', updateSavingsCalculator);
+    cropInput.addEventListener('change', updateSavingsCalculator);
+  }
 });
+
+const BENCHMARK_RATES = {
+  'paddy': 2320,
+  'cotton': 7121,
+  'wheat': 2275,
+  'maize': 2090,
+  'soybean': 4892,
+  'gram': 5440,
+  'mustard': 5650
+};
+
+function updateSavingsCalculator() {
+  const qty = parseFloat(document.getElementById('quantity')?.value || '0');
+  const cropVal = (document.getElementById('crop-select')?.value || '').toLowerCase();
+  const box = document.getElementById('savings-calculator-box');
+  const cutEl = document.getElementById('calc-broker-cut');
+  const savedEl = document.getElementById('calc-saved-profit');
+
+  if (!box || !cutEl || !savedEl) return;
+
+  if (qty > 0 && cropVal) {
+    let matchedRate = 2300;
+    for (const [k, rate] of Object.entries(BENCHMARK_RATES)) {
+      if (cropVal.includes(k)) {
+        matchedRate = rate;
+        break;
+      }
+    }
+    const totalTradeValue = qty * matchedRate;
+    // Traditional 15% middleman deduction (commission agent + cess + weighing loss)
+    const brokerCut = Math.round(totalTradeValue * 0.15);
+
+    cutEl.textContent = '₹' + brokerCut.toLocaleString('en-IN');
+    savedEl.textContent = '+₹' + brokerCut.toLocaleString('en-IN') + ' Extra Net Profit';
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
 
 let allCenters = [];
 
